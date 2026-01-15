@@ -1,0 +1,50 @@
+@page "/Resolutions"
+@using hlasovanisvj.Domain
+@attribute [Authorize]
+
+<HxListLayout Title="Hlasování" TFilterModel="ResolutionFilter"
+              @bind-FilterModel="filterModel"
+              @bind-FilterModel:after="gridComponent.RefreshDataAsync">
+	<CommandsTemplate>
+		<HxButton Text="Nové hlasování"
+		          Color="ThemeColor.Primary"
+		          Icon="BootstrapIcon.Plus" OnClick="HandleNewResolutionClick"/>
+	</CommandsTemplate>
+	<FilterTemplate Context="filterContext">
+		<HxInputText Label="Member" @bind-Value="filterContext.Name"/>
+	</FilterTemplate>
+	<DataTemplate>
+		<HxGrid @ref="gridComponent"
+		        ContentNavigationMode="GridContentNavigationMode.InfiniteScroll"
+		        TableContainerCssClass="scrollable-table-container"
+		        HeaderRowCssClass="sticky-top"
+		        FooterRowCssClass="sticky-bottom"
+		        TItem="Resolution"
+		        DataProvider="GetGridData"
+		        @bind-SelectedDataItem="currentResolution"
+		        @bind-SelectedDataItem:after="HandleSelectedDataItemChanged"
+		        Responsive="true">
+			<Columns>
+				<HxGridColumn HeaderText="Popis"
+				              ItemTextSelector="@(p => p.Title)"
+				              SortKeySelector="p => p.Title"
+				              IsDefaultSortColumn="true"/>
+				<HxGridColumn HeaderText="Otázka"
+				              ItemTextSelector="@(p => p.Question)"
+				              SortKeySelector="p => p.Question"
+				              IsDefaultSortColumn="true"/>
+				<HxGridColumn HeaderText="Akce">
+					
+					<ItemTemplate Context="item">
+						<HxButton Color="ThemeColor.Primary" 
+						          Text="Oteřít hlasování"
+						          OnClick="HandleOpenResolutionButtonClick"></HxButton>
+					</ItemTemplate>
+				</HxGridColumn>
+			</Columns>
+		</HxGrid>
+	</DataTemplate>
+	<DetailTemplate>
+		dataItemEditComponent: {currentResolution.Id: @currentResolution?.Id}
+	</DetailTemplate>
+</HxListLayout>

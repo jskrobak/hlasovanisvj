@@ -1,0 +1,18 @@
+@using Havit.Blazor.Components.Web.Bootstrap
+@inherits LayoutComponentBase
+
+<HxMessenger Position="ToastContainerPosition.BottomCenter" />
+<HxMessageBoxHost />
+
+<div class="d-flex min-vh-100 justify-content-center align-items-center">
+    <div class="d-flex flex-column align-items-center gap-3 w-100" style="max-width: 300px;">
+        @Body
+    </div>
+</div>
+
+
+<div id="blazor-error-ui" data-nosnippet>
+    An unhandled error has occurred.
+    <a href="." class="reload">Reload</a>
+    <span class="dismiss">🗙</span>
+</div>

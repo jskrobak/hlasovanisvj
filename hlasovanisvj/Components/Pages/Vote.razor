@@ -1,0 +1,23 @@
+@page "/Vote"
+@using hlasovanisvj.Components.Layout
+@layout VoteLayout
+
+<h3 class="mb-4">Vote</h3>
+
+<HxButton Color="ThemeColor.Success"
+          Text="Jsem pro"
+          CssClass="w-100"
+          OnClick="HandleInFavorClick" />
+
+<HxButton Color="ThemeColor.Danger"
+          Text="Jsem proti"
+          CssClass="w-100"
+          OnClick="HandleAgainstClick" />
+
+<HxButton Color="ThemeColor.Warning"
+          Text="Zdržuji se"
+          CssClass="w-100"
+          OnClick="HandleAbstainedClick" />
+@code {
+    
+}

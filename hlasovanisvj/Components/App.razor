@@ -1,0 +1,24 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+	<link rel="stylesheet" href="@Assets["_content/Havit.Blazor.Components.Web.Bootstrap/bootstrap.min.css"]" />
+    <link rel="stylesheet" href="@Assets["hlasovanisvj.styles.css"]" />
+    <link rel="stylesheet" href="@Assets["app.css"]" />
+    <ImportMap />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <HeadOutlet/>
+</head>
+
+<body>
+<Routes @rendermode="new InteractiveServerRenderMode(prerender:true)" />
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="@Assets["qrScanner.js"]"></script>    
+    @((MarkupString)@HxSetup.RenderBootstrapJavaScriptReference())
+    <script src="_framework/blazor.web.js"></script>
+</body>
+
+</html>

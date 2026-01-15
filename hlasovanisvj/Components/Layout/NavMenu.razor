@@ -1,0 +1,39 @@
+﻿@using Havit.Blazor.Components.Web.Bootstrap
+@using hlasovanisvj.Data
+@using Microsoft.AspNetCore.Components.Routing
+
+@inject AppDbContext appDbContext
+
+<AuthorizeView>
+	<Authorized>
+		<HxSidebar CssClass="sticky-top bg-body-secondary">
+			<HeaderTemplate>
+				<HxSidebarBrand BrandName="Hlasovani v SVJ" BrandNameShort="SVJ" />
+				
+			</HeaderTemplate>
+	
+			<ItemsTemplate>
+				<HxSidebarItem Text="@context.User?.Identity?.Name" Icon="@BootstrapIcon.Person">
+					<HxSidebarItem Href="Logout" Text="Logout"/>
+				</HxSidebarItem>
+				<HxSidebarItem Text="Účast" Href="" Icon="@BootstrapIcon.People" Match="NavLinkMatch.All"/>
+				<HxSidebarItem Text="Hlasování" Href="Resolutions" Icon="@BootstrapIcon.CardList"/>
+			</ItemsTemplate>
+
+		</HxSidebar>
+	</Authorized>
+	<NotAuthorized>
+		<HxSidebar CssClass="sticky-top bg-body-secondary">
+			<HeaderTemplate>
+				<HxSidebarBrand BrandName="Hlasovani v SVJ" BrandNameShort="SVJ" />
+			</HeaderTemplate>
+	
+			<ItemsTemplate>
+				<HxSidebarItem Text="Přihlášení" Href="Login" Icon="@BootstrapIcon.Person" Match="NavLinkMatch.All"/>
+				<HxSidebarItem Text="Registrace" Href="Register" Icon="@BootstrapIcon.PersonAdd"/>		
+			</ItemsTemplate>
+
+		</HxSidebar>
+	</NotAuthorized>
+</AuthorizeView>
+

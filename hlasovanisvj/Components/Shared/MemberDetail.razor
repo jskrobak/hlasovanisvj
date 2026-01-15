@@ -1,0 +1,33 @@
+@using hlasovanisvj.Domain
+<HxOffcanvas @ref="memberDetailOffCanvasComponent" Title="Edit" Backdrop="OffcanvasBackdrop.Static">
+	<BodyTemplate>
+		<h5>@Model.Name</h5>
+		
+		<p>
+			Podíl: @((Model.ShareValue * 100).ToString("0.000")) % (@Model.ShareFraction)
+		</p>
+		
+		<HxMultiSelect Label="Plné moci od:"
+		               TItem="Member"
+		               TValue="int"
+		               Data="@allMembers"
+		               @bind-Value="selectedPrincipalIds"
+		               TextSelector="@(p => p.Name)"
+		               ValueSelector="@(p => p.Id)"
+		               NullDataText="Loading members..."
+		               EmptyText="-vyber člena-" />
+
+		<p class="mt-3">Plné moci od: @string.Join(", ", selectedPrincipalIds.Select(e => e.ToString()))</p>
+
+		
+		
+		<EditForm Id="@FormId" Model="@Model" OnValidSubmit="@(async () => { await SaveMember(); })">
+			<DataAnnotationsValidator/>
+
+
+		</EditForm>
+	</BodyTemplate>
+	<FooterTemplate>
+		<HxSubmit Color="ThemeColor.Primary" FormId="editForm"Icon="BootstrapIcon.Save">Uložit</HxSubmit>
+	</FooterTemplate>
+</HxOffcanvas>

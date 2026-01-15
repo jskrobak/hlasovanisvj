@@ -1,0 +1,29 @@
+@page "/Login"
+
+@inject NavigationManager Nav
+@inject AuthenticationStateProvider AuthStateProvider
+@inject IJSRuntime JS
+
+<h3>Sign in</h3>
+
+@if (!string.IsNullOrEmpty(Error))
+{
+    <div class="alert alert-danger">@Error</div>
+}
+
+<EditForm Model="@model" OnValidSubmit="@HandleLogin">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label class="form-label">Username</label>
+        <InputText class="form-control" @bind-Value="model.Username" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Password</label>
+        <InputText class="form-control" type="password" @bind-Value="model.Password" />
+    </div>
+
+    <button class="btn btn-primary" type="submit">Sign in</button>
+</EditForm>

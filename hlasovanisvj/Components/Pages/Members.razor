@@ -1,0 +1,88 @@
+@page "/"
+
+@using hlasovanisvj.Domain
+
+@attribute [Authorize]
+
+<div id="qr-reader" style="width:300px"></div>
+
+<HxListLayout Title="Členové" TFilterModel="MemberFilter"
+              @bind-FilterModel="filterModel"
+              @bind-FilterModel:after="gridComponent.RefreshDataAsync">
+	<TitleTemplate>
+		Členové (účast:  &nbsp;
+		<HxBadge Color="@(totalPresentShare > 50 ? ThemeColor.Success: ThemeColor.Danger)">
+			@totalPresentShare.ToString("0.000"))
+		</HxBadge>&nbsp;%)
+	</TitleTemplate>
+	<CommandsTemplate>
+		<HxButton Text="Import"
+		          Color="ThemeColor.Primary"
+		          Icon="BootstrapIcon.FiletypeHtml" OnClick="HandleImportHtmlClick"/>
+		
+		<HxButton Text="Lístky"
+		          Color="ThemeColor.Primary"
+		          Icon="BootstrapIcon.FiletypePdf" OnClick="HandlePrintPdf"/>
+		
+		<HxButton Text="Excel"
+		          Color="ThemeColor.Primary"
+		          Icon="BootstrapIcon.FiletypeXlsx"/>
+		
+		<HxButton Text="QrScan"
+		          Color="ThemeColor.Primary"
+		          Icon="BootstrapIcon.QrCodeScan" OnClick="HandleScanQrClick"/>
+	</CommandsTemplate>
+	<FilterTemplate Context="filterContext">
+		<HxInputText Label="Member" @bind-Value="filterContext.Name"/>
+	</FilterTemplate>
+	<DataTemplate>
+		<HxGrid @ref="gridComponent"
+		        ContentNavigationMode="GridContentNavigationMode.InfiniteScroll"
+		        TableContainerCssClass="scrollable-table-container"
+		        HeaderRowCssClass="sticky-top"
+		        FooterRowCssClass="sticky-bottom"
+		        TItem="Member"
+		        DataProvider="GetGridData"
+		        @bind-SelectedDataItem="currentMember"
+		        @bind-SelectedDataItem:after="HandleSelectedDataItemChanged"
+		        Responsive="true">
+			<Columns>
+				<HxGridColumn HeaderText="Id"
+				              ItemTextSelector="@(p => p.Id.ToString())"
+				              SortKeySelector="p => p.Id"
+				              IsDefaultSortColumn="true"/>
+				<HxGridColumn HeaderText="Jméno"
+				              ItemTextSelector="@(p => p.Name)"
+				              SortKeySelector="p => p.Name"/>
+				<HxGridColumn HeaderText="Podíl"
+				              ItemTextSelector="@(p => p.ShareValue.ToString("0.000"))"
+				              SortKeySelector="p => p.ShareValue"/>
+				<HxGridColumn HeaderText="Plné moci"
+				              ItemTextSelector="@(p => string.Join(", ", p.Principals.Select(p => p.Id)))"/>
+				
+				<HxGridColumn HeaderText="Přítomen"
+				              SortKeySelector="p => p.IsPresent">
+					
+					<ItemTemplate Context="item">
+						<HxSwitch @bind-Value="@item.IsPresent"  
+						          @bind-Value:after="@(async () => await SavePresenceAsync(item))" />
+					</ItemTemplate>
+				</HxGridColumn>
+			</Columns>
+		</HxGrid>
+	</DataTemplate>
+	<DetailTemplate>
+		dataItemEditComponent: {currentMember.Id: @currentMember?.Id}
+	</DetailTemplate>
+</HxListLayout>
+
+<HxOffcanvas @ref="importHtmlOffCanvasComponent" Title="Import html" Backdrop="OffcanvasBackdrop.Static">
+	<BodyTemplate>
+		<HxInputFile @ref="hxInputFileComponent" UploadUrl="/upload" OnUploadCompleted="HandleHtmlFileUploaded"></HxInputFile>
+		<br/>
+		<HxButton Icon="@BootstrapIcon.Upload" Text="Importovat" Color="ThemeColor.Secondary" OnClick="HandleUploadHtmlClick" />
+	</BodyTemplate>
+</HxOffcanvas>
+
+<MemberDetail @ref="memberDetail" Model="@currentMember"></MemberDetail>
+
