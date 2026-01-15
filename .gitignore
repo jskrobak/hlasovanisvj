@@ -52,3 +52,17 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+
+# SQLite databáze
+*.db
+*.sqlite
+*.sqlite3
+
+# SQLite WAL / SHM soubory
+*.db-wal
+*.db-shm
+*.sqlite-wal
+*.sqlite-shm
+
+# Lokální data adresáře
+.data/
