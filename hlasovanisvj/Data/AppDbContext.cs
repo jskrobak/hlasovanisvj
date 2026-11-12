@@ -13,6 +13,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Vote> Votes { get; set; }
     public DbSet<Organization> Organizations { get; set; }
     public DbSet<User> Users { get; set; }
+    public DbSet<Session> Sessions { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -26,18 +27,33 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .HasForeignKey<Organization>(o => o.UserId).IsRequired();
         });
         
-        modelBuilder.Entity<Organization>(entity =>
+        modelBuilder.Entity<Session>(entity =>
         {
-            entity.HasIndex(o => o.UserId)
-                .IsUnique();
-            
             entity.HasOne<Resolution>(a => a.OpenedResolution)
                 .WithMany()
                 .HasForeignKey(a => a.OpenedResolutionId);
             
             entity.HasMany<Member>(o => o.Members)
-                .WithOne(m => m.Organization)
-                .HasForeignKey(m => m.OrganizationId);
+                .WithOne(m => m.Session)
+                .HasForeignKey(m => m.SessionId);
+            
+            entity.HasMany<Resolution>(a => a.Resolutions)
+                .WithOne(r => r.Session)
+                .HasForeignKey(a => a.SessionId);
+        });
+        
+        modelBuilder.Entity<Organization>(entity =>
+        {
+            entity.HasIndex(o => o.UserId)
+                .IsUnique();
+          
+            entity.HasOne<Session>(a => a.CurrentSession)
+                .WithMany()
+                .HasForeignKey(a => a.CurrentSessionId);
+            
+            entity.HasMany<Session>(o => o.Sessions)
+                .WithOne(s => s.Organization)
+                .HasForeignKey(s => s.OrganizationId);
         });
 
         modelBuilder.Entity<Resolution>()

@@ -7,18 +7,25 @@ using Microsoft.EntityFrameworkCore;
 
 namespace hlasovanisvj.Components.Shared;
 
-public partial class MemberDetail(AttendanceService attendanceService) : ComponentBase
+public partial class MemberDetail(AttendanceService attendanceService, 
+    UserService  userService,
+    MemberService  memberService,
+    AppDbContext dbContext) : ComponentBase
 {
     [Parameter] public string FormId { get; set; } = "editForm";
     [Parameter] public Domain.Member Model { get; set; } = null!;
-    [Inject] protected AppDbContext DbContext { get; set; }
+    [Parameter] public EventCallback OnClosed { get; set; }
     
     private HxOffcanvas memberDetailOffCanvasComponent;
     private List<int> selectedPrincipalIds = new();
     private List<Member> allMembers = [];
+    private int currentSessionId;
 
     protected override async Task OnInitializedAsync()
     {
+        var user = await userService.GetCurrentUserAsync();
+        currentSessionId = user.Organization.CurrentSessionId ?? 0;
+
     }
 
     protected override async Task OnParametersSetAsync()
@@ -27,7 +34,8 @@ public partial class MemberDetail(AttendanceService attendanceService) : Compone
             return;
         
         selectedPrincipalIds = Model.Principals?.Select(p => p.Id).ToList() ?? [];
-        allMembers = await DbContext.Members.Where(m => m.Id != Model.Id)
+        allMembers = await dbContext.Members
+            .Where(m => m.SessionId == currentSessionId && m.Id != Model.Id)
             .OrderBy(m => m.Id).ToListAsync();
     }
 
@@ -38,13 +46,18 @@ public partial class MemberDetail(AttendanceService attendanceService) : Compone
     
     private async Task SaveMember()
     {
-        Model.Principals = await DbContext.Members
-            .Where(m => selectedPrincipalIds.Contains(m.Id))
-            .ToListAsync();
+        await memberService.SyncPrincipalsAsync(Model.Id, selectedPrincipalIds);
         
-        await attendanceService.SavePresenceAsync(Model);
-        //DbContext.Members.Update(Model);
-        //await DbContext.SaveChangesAsync();
+        await attendanceService.SavePresenceAsync(Model.Id, Model.IsPresent);
+       
         await memberDetailOffCanvasComponent.HideAsync();
+        
+        StateHasChanged();
+        await HandleClosed();
+    }
+    
+    private async Task HandleClosed()
+    {
+        await OnClosed.InvokeAsync();
     }
 }

@@ -1,12 +1,17 @@
+using Havit.Blazor.Components.Web;
+using Havit.Blazor.Components.Web.Bootstrap;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.JSInterop;
 
 namespace hlasovanisvj.Components.Pages;
 
-public partial class Login : ComponentBase
+public partial class Login(NavigationManager navigationManager,
+    AuthenticationStateProvider authStateProvider,
+    IJSRuntime jsRuntime,
+    IHxMessengerService messengerService) : ComponentBase
 {
     private LoginRequest model = new();
-    private string? Error;
     private IJSObjectReference? _mod;
     private bool _didLogout;
 
@@ -14,17 +19,17 @@ public partial class Login : ComponentBase
     {
         if (firstRender)
         {
-            _mod = await JS.InvokeAsync<IJSObjectReference>("import", "./auth.js");
+            _mod = await jsRuntime.InvokeAsync<IJSObjectReference>("import", "./auth.js");
             
             if(!_didLogout)
-                Nav.NavigateTo("logout", forceLoad: true);
+                navigationManager.NavigateTo("logout", forceLoad: true);
         }
     }
 
     protected override async Task OnInitializedAsync()
     {
         // capture ReturnUrl if provided
-        var uri = Nav.ToAbsoluteUri(Nav.Uri);
+        var uri = navigationManager.ToAbsoluteUri(navigationManager.Uri);
         var q = System.Web.HttpUtility.ParseQueryString(uri.Query);
         model.ReturnUrl = q["returnUrl"];
         _didLogout = string.Equals(q["loggedout"], "1", StringComparison.Ordinal);
@@ -33,14 +38,25 @@ public partial class Login : ComponentBase
     private async Task HandleLogin()
     {
         
-        var loginUrl = new Uri(new Uri(Nav.BaseUri), "login").ToString(); // handles virtual dirs
-        await _mod!.InvokeVoidAsync("postLoginJson", loginUrl, new {
-            Username = model.Username,
-            Password = model.Password,
-            ReturnUrl = model.ReturnUrl
-        });
+        var loginUrl = new Uri(new Uri(navigationManager.BaseUri), "login").ToString(); // handles virtual dirs
+
+        try
+        {
+            await _mod!.InvokeVoidAsync("postLoginJson", loginUrl, new
+            {
+                Username = model.Username,
+                Password = model.Password,
+                ReturnUrl = model.ReturnUrl
+            });
+            
+            navigationManager.NavigateTo(model.ReturnUrl ?? "/", forceLoad: true);
+        }
+        catch (JSException jsEx)
+        {
+            messengerService.AddError("Přihlášení se nezdařilo!");
+        }
+
         
-        Nav.NavigateTo(model.ReturnUrl ?? "/", forceLoad: true);
         //if (await ((CustomAuthStateProvider)AuthStateProvider).LoginAsync(model.Username, model.Password))
         //    Nav.NavigateTo(model.ReturnUrl ?? "/", forceLoad: true);
         //else

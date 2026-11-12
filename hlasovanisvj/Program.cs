@@ -3,6 +3,7 @@ using Havit.Blazor.Components.Web.Bootstrap;
 using hlasovanisvj;
 using hlasovanisvj.Components;
 using hlasovanisvj.Data;
+using hlasovanisvj.Hubs;
 using hlasovanisvj.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -18,8 +19,13 @@ var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ??
                        throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
-builder.Services.AddDbContext<AppDbContext>(options =>
-	options.UseSqlite(connectionString));
+builder.Services.AddDbContextFactory<AppDbContext>(options =>
+{
+	options.UseSqlite(connectionString);
+});
+
+//builder.Services.AddDbContext<AppDbContext>(options =>
+//	options.UseSqlite(connectionString));
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
@@ -50,6 +56,9 @@ builder.Services.AddScoped<DataImportService>();
 builder.Services.AddScoped<AttendanceService>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<MemberService>();
+builder.Services.AddScoped<VoteService>();
+builder.Services.AddScoped<SessionService>();
+builder.Services.AddScoped<OrganizationService>();
 
 builder.Services.AddTransient<IUploadService, UploadToMemoryCacheService>();
 builder.Services.AddMemoryCache();
@@ -72,6 +81,8 @@ app.UseHttpsRedirection();
 
 
 app.UseAntiforgery();
+
+app.MapHub<VoteHub>("/hubs/vote");
 
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
@@ -97,6 +108,15 @@ app.MapGet("/download", async (HttpContext http, IMemoryCache memoryCache, [From
 		return Results.NotFound();
 
 	return Results.File(data, "application/octet-stream", $"listky.pdf");
+}).DisableAntiforgery(); 
+
+app.MapGet("/downloadXls", async (HttpContext http, IMemoryCache memoryCache, [FromQuery] Guid guid) =>
+{
+	if (!memoryCache.TryGetValue(guid, out byte[] data))
+		return Results.NotFound();
+
+	return Results.File(data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "members.xlsx");
+	//return Results.File(data, "application/octet-stream", $"členové.xlsx");
 }).DisableAntiforgery(); 
 
 // --- Login endpoint (POST) ---

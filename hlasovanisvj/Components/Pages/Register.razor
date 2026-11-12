@@ -1,5 +1,5 @@
 @page "/Register"
-<h3>Register</h3>
+<h3>Registrace</h3>
 
 <EditForm Model="@_model" OnValidSubmit="@(async () => { await RegisterUser(); })">
     <DataAnnotationsValidator/>
@@ -9,5 +9,5 @@
     <HxInputText Type="InputType.Password" Label="Heslo" @bind-Value="_model.Password"></HxInputText>
     <HxInputText Type="InputType.Password" Label="Heslo" @bind-Value="_model.Password2"></HxInputText>
     
-    <HxSubmit Color="ThemeColor.Primary" Icon="BootstrapIcon.Save">Registrovat</HxSubmit>
+    <HxSubmit Color="ThemeColor.Primary">Registrovat</HxSubmit>
 </EditForm>

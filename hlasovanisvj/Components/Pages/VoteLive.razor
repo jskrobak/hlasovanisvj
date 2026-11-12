@@ -1,0 +1,126 @@
+@page "/VoteLive"
+@using hlasovanisvj.Domain
+
+@attribute [Authorize]
+
+<style>
+	.virtualized-table-container {
+		overflow: auto;
+		height: calc(100vh - 160px);
+	}
+</style>
+
+<div id="qr-reader" style="width:300px"></div>
+
+@if (_resolution == null || _stats == null)
+{
+	<HxAlert Color="ThemeColor.Warning">Není otevřené žádné hlasování.</HxAlert>
+}
+else
+{
+	<HxListLayout Title="Hlasování" TFilterModel="MemberFilter"
+	              @bind-FilterModel="filterModel"
+	              @bind-FilterModel:after="gridComponent.RefreshDataAsync">
+		<TitleTemplate>
+			<h3>@_resolution.Question</h3>
+		</TitleTemplate>
+		<CommandsTemplate>
+			<HxButton Text="Uzavřít hlasování"
+			          Color="ThemeColor.Danger"
+			          Icon="BootstrapIcon.DoorOpen" OnClick="HandleCloseResolution"/>
+
+		</CommandsTemplate>
+		<FilterTemplate Context="filterContext">
+			<HxInputText Label="Member" @bind-Value="filterContext.Name"/>
+		</FilterTemplate>
+		<DataTemplate>
+			<HxGrid @ref="gridComponent"
+			        TableContainerCssClass="virtualized-table-container"
+			        ContentNavigationMode="GridContentNavigationMode.InfiniteScroll"
+			        HeaderRowCssClass="sticky-top"
+			        FooterRowCssClass="sticky-bottom"
+			        TItem="Member"
+			        DataProvider="GetGridData"
+			        @bind-SelectedDataItem="currentMember"
+			        Responsive="true">
+				<Columns>
+					<HxGridColumn HeaderText="Id"
+					              ItemTextSelector="@(p => p.Id.ToString())"
+					              SortKeySelector="p => p.Id"
+					              IsDefaultSortColumn="true"/>
+					
+					<HxGridColumn HeaderText="Hlas">
+						<ItemTemplate Context="item">
+							
+							@switch (item.GetVoteChoice(resolutionId))
+							{
+								case VoteChoice.InFavor:
+									<HxBadge Size="ButtonSize.Small"
+									         Icon="BootstrapIcon.HandThumbsUpFill"
+									         Color="ThemeColor.Success">
+										Pro
+									</HxBadge>
+									break;
+								case VoteChoice.Against:
+									<HxBadge Size="ButtonSize.Small"
+									         Icon="BootstrapIcon.HandThumbsDownFill"
+									         Color="ThemeColor.Danger">
+										Proti
+									</HxBadge>
+									break;
+								case VoteChoice.Abstained:
+									<HxBadge Size="ButtonSize.Small"
+									         Icon="BootstrapIcon._0Circle"
+									         Color="ThemeColor.Warning">
+										Zdržel se
+									</HxBadge>
+									break;
+								default:
+									<HxBadge Size="ButtonSize.Small"
+									         Icon="BootstrapIcon.QuestionCircle"
+									         Color="ThemeColor.Secondary">
+										Nehlasoval
+									</HxBadge>
+									break;
+							}
+						</ItemTemplate>
+					</HxGridColumn>
+					
+					<HxGridColumn HeaderText="Jméno"SortKeySelector="p => p.Name" ItemTextSelector="p => p.Name"/>
+					
+					
+					<HxGridColumn HeaderText="Podíl"
+					              ItemTextSelector="@(p => p.ShareValue.ToString("0.000"))"
+					              SortKeySelector="p => p.ShareValue"/>
+					
+					<HxGridColumn HeaderText="Hlasování"
+					              SortKeySelector="p => p.IsPresent">
+								
+						<ItemTemplate Context="item">
+							<HxButton Size="ButtonSize.Small" Color="ThemeColor.Success"
+							          Text="Pro"
+							          Enabled="@(item.Proxy==null)"
+							          OnClick="@(() => HandleVoteInFavor(item))"></HxButton>
+							<HxButton Size="ButtonSize.Small" Color="ThemeColor.Danger"
+							          Enabled="@(item.Proxy==null)"
+							          Text="Proti"
+							          OnClick="@(() => HandleVoteAgainst(item))"></HxButton>
+							<HxButton Size="ButtonSize.Small" Color="ThemeColor.Secondary"
+							          Enabled="@(item.Proxy==null)"
+							          Text="Zdržel se"
+							          OnClick="@(() => HandleVoteAbstained(item))"></HxButton>
+						</ItemTemplate>
+					</HxGridColumn>
+				</Columns>
+			</HxGrid>
+		</DataTemplate>
+		<DetailTemplate>
+			<br/>
+			<HxProgress>
+				<HxProgressBar Value="@_stats.InFavorSharePercent" Color="ThemeColor.Success" Label="@($"{_stats.InFavorSharePercent:0.0} %")"/>
+				<HxProgressBar Value="@_stats.AgainstSharePercent" Color="ThemeColor.Danger" Label="@($"{_stats.AgainstSharePercent:0.0} %")"/>
+				<HxProgressBar Value="@_stats.AbstainedSharePercent" Color="ThemeColor.Secondary" Label="@($"{_stats.AbstainedSharePercent:0.0} %")"/>
+			</HxProgress>
+		</DetailTemplate>
+	</HxListLayout>
+}
