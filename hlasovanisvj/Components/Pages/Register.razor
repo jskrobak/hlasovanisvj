@@ -1,4 +1,5 @@
 @page "/Register"
+@inject ExternalAuthInfo ExternalAuth
 <h3>Registrace</h3>
 
 <EditForm Model="@_model" OnValidSubmit="@(async () => { await RegisterUser(); })">
@@ -11,3 +12,11 @@
     
     <HxSubmit Color="ThemeColor.Primary">Registrovat</HxSubmit>
 </EditForm>
+
+@if (ExternalAuth.GoogleEnabled)
+{
+    <hr class="my-4" style="max-width: 400px"/>
+    <a class="btn btn-outline-secondary" href="login/google">
+        <HxIcon Icon="BootstrapIcon.Google"/> Registrovat přes Google
+    </a>
+}

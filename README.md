@@ -26,7 +26,23 @@ dotnet ef migrations add <Nazev> --project hlasovanisvj
 
 ## Konfigurace
 
-- `BaseUrl` – veřejná adresa aplikace, použije se v QR kódech na hlasovacích lístcích.
+Tajné hodnoty patří do user-secrets (lokálně) nebo proměnných prostředí (produkce, `:` → `__`).
+
+- `BaseUrl` – veřejná adresa aplikace; použije se v QR kódech na lístcích a v odkazech pro obnovení hesla.
+- `Smtp:Host`, `Smtp:Port` (výchozí 587), `Smtp:UserName`, `Smtp:Password`, `Smtp:From`, `Smtp:FromName`
+  – odesílání e-mailů (obnovení hesla). Bez `Smtp:Host` se e-maily jen zapisují do logu (vývoj).
+- `Authentication:Google:ClientId`, `Authentication:Google:ClientSecret` – přihlášení a registrace přes Google.
+  Bez nich se tlačítka Google nezobrazují. V Google Cloud Console (OAuth client typu *Web application*)
+  nastavte *Authorized redirect URI* na `https://<doména>/signin-google`.
+
+Za reverse proxy aplikace čte `X-Forwarded-Proto/Host/For` – proxy je musí posílat a aplikace
+nemá být dostupná přímo, jen přes proxy.
+
+## Schůze – detail a report
+
+Na stránce **Schůze → Detail** je souhrn, usnesení s výsledky a prezenční listina.
+Tlačítko **Stáhnout PDF** vytvoří report pro archivaci (souhrn, usnesení, prezenční listina
+s místem pro podpis a jmenovité hlasování ke každému usnesení).
 
 ## Schůze
 

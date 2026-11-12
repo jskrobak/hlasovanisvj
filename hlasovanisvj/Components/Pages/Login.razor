@@ -1,6 +1,12 @@
 @page "/Login"
+@inject ExternalAuthInfo ExternalAuth
 
 <h3>Přihlášení</h3>
+
+@if (googleError)
+{
+    <HxAlert Color="ThemeColor.Danger">Přihlášení přes Google se nezdařilo.</HxAlert>
+}
 
 <EditForm Model="@model" OnValidSubmit="@HandleLogin">
     <DataAnnotationsValidator />
@@ -9,5 +15,16 @@
     <HxInputText Type="InputType.Email" Label="E-mail" @bind-Value="model.Username"></HxInputText>
     <HxInputText Type="InputType.Password" Label="Heslo" @bind-Value="model.Password"></HxInputText>
     
-    <HxSubmit Color="ThemeColor.Primary">Přihlásit</HxSubmit>
+    <div class="d-flex align-items-center gap-3 mt-2">
+        <HxSubmit Color="ThemeColor.Primary">Přihlásit</HxSubmit>
+        <a href="ForgotPassword">Zapomenuté heslo?</a>
+    </div>
 </EditForm>
+
+@if (ExternalAuth.GoogleEnabled)
+{
+    <hr class="my-4" style="max-width: 400px"/>
+    <a class="btn btn-outline-secondary" href="@GoogleLoginUrl">
+        <HxIcon Icon="BootstrapIcon.Google"/> Přihlásit přes Google
+    </a>
+}

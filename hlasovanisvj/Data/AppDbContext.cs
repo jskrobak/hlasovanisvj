@@ -19,6 +19,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.Entity<User>(entity =>
         {
             entity.HasIndex(m => m.Email).IsUnique();
+            entity.HasIndex(m => m.GoogleSubject).IsUnique();
             entity.HasOne<Organization>(u=> u.Organization)
                 .WithOne(o => o.User)
                 .HasForeignKey<Organization>(o => o.UserId).IsRequired();
