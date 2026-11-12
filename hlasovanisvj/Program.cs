@@ -104,6 +104,8 @@ var app = builder.Build();
 app.UseForwardedHeaders();
 
 // Aplikuje čekající EF migrace při startu (nová instance si databázi založí sama).
+// Database:SkipMigrations=true jen pro lokální náhled bez dostupné databáze.
+if (!app.Configuration.GetValue("Database:SkipMigrations", false))
 await using (var scope = app.Services.CreateAsyncScope())
 {
 	var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -207,10 +209,11 @@ app.MapPost("/logout", async (HttpContext http) =>
 	return Results.Redirect("/login?loggedout=1");
 });
 
-app.MapGet("/logout", async (HttpContext http) =>
+app.MapGet("/logout", async (HttpContext http, string? returnUrl) =>
 {
 	await http.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-	return Results.Redirect("/login?loggedout=1");
-}); 
+	var local = !string.IsNullOrEmpty(returnUrl) && returnUrl.StartsWith('/') && !returnUrl.StartsWith("//") && !returnUrl.StartsWith("/\\");
+	return Results.Redirect(local ? $"/login?loggedout=1&returnUrl={Uri.EscapeDataString(returnUrl!)}" : "/login?loggedout=1");
+});
 
 app.Run();

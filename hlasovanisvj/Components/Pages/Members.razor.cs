@@ -57,7 +57,7 @@ public partial class Members(IJSRuntime jsRuntime,
         currentSessionId = currentSession?.Id ?? 0;
         if (currentSessionId == 0)
         {
-            navigationManager.NavigateTo("/");
+            navigationManager.NavigateTo("/Sessions");
             return;
         }
         

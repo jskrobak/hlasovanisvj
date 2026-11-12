@@ -113,7 +113,7 @@ public static class GoogleAuth
             await db.SaveChangesAsync();
 
             await SignInAsync(http, user);
-            return Results.Redirect("/");
+            return Results.Redirect("/Sessions");
         }).DisableAntiforgery(); // chráněno krátkodobou SameSite=Lax cookie s Google identitou
 
         // Zrušení rozpracované registrace přes Google.
@@ -134,7 +134,7 @@ public static class GoogleAuth
     private static string LocalUrl(string? url) =>
         !string.IsNullOrEmpty(url) && url.StartsWith('/') && !url.StartsWith("//") && !url.StartsWith("/\\")
             ? url
-            : "/";
+            : "/Sessions";
 
     private sealed record GoogleIdentity(string Subject, string Email, bool EmailVerified)
     {

@@ -1,30 +1,21 @@
 @page "/Login"
-@inject ExternalAuthInfo ExternalAuth
+@layout Layout.LandingLayout
 
-<h3>Přihlášení</h3>
+<div class="container py-5" style="max-width: 440px">
+    <div class="card shadow-sm">
+        <div class="card-body p-4">
+            <h1 class="h4 mb-3">Přihlášení</h1>
 
-@if (googleError)
-{
-    <HxAlert Color="ThemeColor.Danger">Přihlášení přes Google se nezdařilo.</HxAlert>
-}
+            @if (googleError)
+            {
+                <HxAlert Color="ThemeColor.Danger">Přihlášení přes Google se nezdařilo.</HxAlert>
+            }
 
-<EditForm Model="@model" OnValidSubmit="@HandleLogin">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
+            <LoginForm ReturnUrl="@returnUrl"/>
 
-    <HxInputText Type="InputType.Email" Label="E-mail" @bind-Value="model.Username"></HxInputText>
-    <HxInputText Type="InputType.Password" Label="Heslo" @bind-Value="model.Password"></HxInputText>
-    
-    <div class="d-flex align-items-center gap-3 mt-2">
-        <HxSubmit Color="ThemeColor.Primary">Přihlásit</HxSubmit>
-        <a href="ForgotPassword">Zapomenuté heslo?</a>
+            <p class="mt-4 mb-0 small text-body-secondary">
+                Nemáte účet? <a href="Register">Zaregistrujte se</a>.
+            </p>
+        </div>
     </div>
-</EditForm>
-
-@if (ExternalAuth.GoogleEnabled)
-{
-    <hr class="my-4" style="max-width: 400px"/>
-    <a class="btn btn-outline-secondary" href="@GoogleLoginUrl">
-        <HxIcon Icon="BootstrapIcon.Google"/> Přihlásit přes Google
-    </a>
-}
+</div>

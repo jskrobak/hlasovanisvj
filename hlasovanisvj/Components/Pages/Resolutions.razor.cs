@@ -35,7 +35,7 @@ public partial class Resolutions(UserService userService,
         currentSessionId = currentSession?.Id ?? 0;
         if (currentSessionId == 0)
         {
-            navigationManager.NavigateTo("/");
+            navigationManager.NavigateTo("/Sessions");
             return;
         }
         openedResolutionId = currentSession?.OpenedResolutionId;
