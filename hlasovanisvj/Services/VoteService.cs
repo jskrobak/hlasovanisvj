@@ -21,7 +21,7 @@ public class VoteService(IDbContextFactory<AppDbContext> dbFactory,
 
         var rows = await dbContext.Votes
             .AsNoTracking()
-            .Where(v => v.ResolutionId == resolutionId)
+            .Where(v => v.ResolutionId == resolutionId && !v.Member.IsGuest) // host má nulový podíl
             .Select(v => new { v.Choice, v.Member.ShareValue })
             .ToListAsync();
 
@@ -59,9 +59,11 @@ public class VoteService(IDbContextFactory<AppDbContext> dbFactory,
     {
         await using var ctx = await dbFactory.CreateDbContextAsync();
 
-        // Hlasovat lze jen o usnesení, které je ve schůzi člena právě otevřené.
+        // Hlasovat lze jen o usnesení, které je ve schůzi člena právě otevřené (a schůze není uzavřená).
         var isOpen = await ctx.Members
-            .AnyAsync(m => m.Id == memberId && m.Session.OpenedResolutionId == resolutionId);
+            .AnyAsync(m => m.Id == memberId
+                           && m.Session.OpenedResolutionId == resolutionId
+                           && m.Session.ClosedAt == null);
         if (!isOpen)
             throw new InvalidOperationException("Hlasování o tomto usnesení není otevřené.");
 

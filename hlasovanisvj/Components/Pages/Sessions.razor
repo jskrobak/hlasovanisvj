@@ -1,9 +1,10 @@
 @page "/"
 
-@using System.Drawing
 @using hlasovanisvj.Domain
 @attribute [Authorize]
 
+@if (organizationId != 0)
+{
 <HxListLayout Title="Schůze" TFilterModel="SessionFilter"
               @bind-FilterModel="filterModel"
               @bind-FilterModel:after="gridComponent.RefreshDataAsync">
@@ -17,7 +18,8 @@
 	</FilterTemplate>
 	<DataTemplate>
 		<HxGrid @ref="gridComponent"
-		        ContentNavigationMode="GridContentNavigationMode.InfiniteScroll"
+		        ContentNavigationMode="GridContentNavigationMode.Pagination"
+		        PageSize="50"
 		        TableContainerCssClass="scrollable-table-container"
 		        HeaderRowCssClass="sticky-top"
 		        FooterRowCssClass="sticky-bottom"
@@ -27,26 +29,44 @@
 		        @bind-SelectedDataItem:after="HandleSelectedDataItemChanged"
 		        Responsive="true">
 			<Columns>
-				<HxGridColumn HeaderText="Date"
-				              ItemTextSelector="@(p => $"{p.Date}")"
+				<HxGridColumn HeaderText="Datum"
+				              ItemTextSelector="@(p => p.Date.ToShortDateString())"
 				              SortKeySelector="p => p.Date"
 				              IsDefaultSortColumn="true"/>
 				<HxGridColumn HeaderText="Název"
 				              ItemTextSelector="@(p => p.Name)"
-				              SortKeySelector="p => p.Name"
-				              IsDefaultSortColumn="true"/>
+				              SortKeySelector="p => p.Name"/>
+				<HxGridColumn HeaderText="Stav">
+					<ItemTemplate Context="item">
+						@if (item.IsClosed)
+						{
+							<HxBadge Color="ThemeColor.Secondary">Uzavřená @item.ClosedAt!.Value.ToLocalTime().ToShortDateString()</HxBadge>
+						}
+						else
+						{
+							<HxBadge Color="ThemeColor.Info">Probíhá / připravuje se</HxBadge>
+						}
+					</ItemTemplate>
+				</HxGridColumn>
 				<HxGridColumn HeaderText="Akce">
 					
 					<ItemTemplate Context="item">
 						@if(currentSessionId != item.Id)
 						{
-							<HxButton Color="ThemeColor.Primary"
-							          Text="Otevřít schůzi"
+							<HxButton Color="@(item.IsClosed ? ThemeColor.Secondary : ThemeColor.Primary)"
+							          Text="@(item.IsClosed ? "Prohlížet" : "Otevřít schůzi")"
 							          OnClick="@(() => HandleOpenSessionButtonClick(item.Id))"></HxButton>
 						}
 						else
 						{ 
 							<HxBadge Color="ThemeColor.Success">Aktivní</HxBadge>
+						}
+						@if (!item.IsClosed)
+						{
+							<HxButton Color="ThemeColor.Warning" CssClass="ms-1"
+							          Text="Uzavřít schůzi"
+							          Tooltip="Po uzavření lze schůzi jen prohlížet"
+							          OnClick="@(() => HandleCloseSessionButtonClick(item.Id))"></HxButton>
 						}
 					</ItemTemplate>
 				</HxGridColumn>
@@ -64,5 +84,6 @@
 		
 	</DetailTemplate>
 </HxListLayout>
+}
 
 <SessionDetail @ref="sessionDetail" OnClosed="HandleDetailClosed"></SessionDetail>

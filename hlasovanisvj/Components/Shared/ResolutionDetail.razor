@@ -10,12 +10,15 @@
             <DataAnnotationsValidator />
             <ValidationSummary />
             
-            <HxInputText Label="Název" @bind-value="Model.Title"></HxInputText>
-            <HxInputText Label="Otázka" @bind-value="Model.Question"></HxInputText>
+            <HxInputText Label="Název" @bind-Value="Model.Title" Enabled="@(!ReadOnly)"></HxInputText>
+            <HxInputText Label="Otázka" @bind-Value="Model.Question" Enabled="@(!ReadOnly)"></HxInputText>
 
         </EditForm>
     </BodyTemplate>
     <FooterTemplate>
-        <HxSubmit Color="ThemeColor.Primary" FormId="@FormId" Icon="BootstrapIcon.Save">Uložit</HxSubmit>
+        @if (!ReadOnly)
+        {
+            <HxSubmit Color="ThemeColor.Primary" FormId="@FormId" Icon="BootstrapIcon.Save">Uložit</HxSubmit>
+        }
     </FooterTemplate>
 </HxOffcanvas>

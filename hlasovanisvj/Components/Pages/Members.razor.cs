@@ -7,6 +7,7 @@ using hlasovanisvj.Data;
 using hlasovanisvj.Domain;
 using hlasovanisvj.Services;
 using Microsoft.AspNetCore.Components;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.JSInterop;
@@ -36,14 +37,11 @@ public partial class Members(IJSRuntime jsRuntime,
     private DotNetObjectReference<Members>? objRef;
     private double totalPresentShare = 0;
     private int currentSessionId;
-    private Session currentSession;
+    private Session? currentSession;
+
+    private bool IsReadOnly => currentSession?.IsClosed == true;
     
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if(currentSessionId == 0)
-            navigationManager.NavigateTo("/");
-    }
     
 
     protected override async Task OnInitializedAsync()
@@ -51,23 +49,42 @@ public partial class Members(IJSRuntime jsRuntime,
         await base.OnInitializedAsync();
         
         var user = await userService.GetCurrentUserAsync();
+        if (user == null)
+            return;
         
         currentSession = await sessionService.GetCurrentSessionAsync(user.OrganizationId);
         
         currentSessionId = currentSession?.Id ?? 0;
+        if (currentSessionId == 0)
+        {
+            navigationManager.NavigateTo("/");
+            return;
+        }
         
         totalPresentShare = await attendanceService.GetTotalPresentShareAsync(currentSessionId);
     }
 
     async Task<GridDataProviderResult<Member>> GetGridData(GridDataProviderRequest<Member> req)
     {
-        return memberService.GetAll(req, currentSessionId, filterModel);
+        return await memberService.GetAllAsync(req, currentSessionId, filterModel);
     }
 
     async Task HandleSelectedDataItemChanged()
     {
-        memberDetail.Model = currentMember!;
-        await memberDetail.ShowAsync();
+        if (currentMember == null)
+            return;
+        
+        await memberDetail.ShowAsync(currentMember);
+    }
+
+    private async Task HandleAddGuestClick()
+    {
+        await memberDetail.ShowAsync(new Member
+        {
+            SessionId = currentSessionId,
+            IsGuest = true,
+            ShareFraction = "0"
+        });
     }
 
     private async Task HandleImportHtmlClick()
@@ -128,13 +145,27 @@ public partial class Members(IJSRuntime jsRuntime,
             return;
         }
 
-        var member = dbContext.Members.FirstOrDefault(m => m.GlobalId == memberId);
+        var member = await dbContext.Members
+            .AsNoTracking()
+            .FirstOrDefaultAsync(m => m.GlobalId == memberId && m.SessionId == currentSessionId);
         if (member == null)
+        {
+            messengerService.AddError("Lístek nepatří do této schůze.");
             return;
+        }
+
+        try
+        {
+            member.IsPresent = !member.IsPresent;
+            await attendanceService.SavePresenceAsync(member.Id, member.IsPresent);
+        }
+        catch (InvalidOperationException ex)
+        {
+            messengerService.AddError(ex.Message);
+            return;
+        }
         
-        member.IsPresent = !member.IsPresent;
-        await attendanceService.SavePresenceAsync(member.Id, member.IsPresent);
-        
+        await gridComponent.RefreshDataAsync();
         totalPresentShare = await attendanceService.GetTotalPresentShareAsync(currentSessionId);
         
         StateHasChanged();
@@ -149,7 +180,15 @@ public partial class Members(IJSRuntime jsRuntime,
 
     private async Task SavePresenceAsync(Member item)
     {
-        await attendanceService.SavePresenceAsync(item.Id, item.IsPresent);
+        try
+        {
+            await attendanceService.SavePresenceAsync(item.Id, item.IsPresent);
+        }
+        catch (InvalidOperationException ex)
+        {
+            messengerService.AddError(ex.Message);
+        }
+        await gridComponent.RefreshDataAsync();
         totalPresentShare = await attendanceService.GetTotalPresentShareAsync(currentSessionId);
         StateHasChanged();
     }
@@ -168,6 +207,9 @@ public partial class Members(IJSRuntime jsRuntime,
         {
             m.Id, 
             m.Name,
+            Host = m.IsGuest,
+            m.ShareFraction,
+            m.ShareValue,
             m.IsPresent,
              Principals = string.Join(", ", m.Principals.Select(p => p.Name)),
         } ), "Members");
