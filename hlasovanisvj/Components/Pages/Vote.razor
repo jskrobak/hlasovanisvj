@@ -2,22 +2,44 @@
 @using hlasovanisvj.Components.Layout
 @layout VoteLayout
 
-<h3 class="mb-4">Vote</h3>
+@if(_resolution != null && _member != null)
+{
+    <HxCard CssClass="text-center" FooterCssClass="text-muted">
+        <HeaderTemplate>Hlasujte</HeaderTemplate>
+        <BodyTemplate>
+            <HxCardTitle>@_resolution?.Title</HxCardTitle>
+            <HxCardText>@_resolution?.Question</HxCardText>
+            <HxButton @ref="btnInFavor" 
+                      Color="ThemeColor.Success"
+                      Text="Jsem pro"
+                      CssClass="w-100"
+                      OnClick="HandleInFavorClick" />
 
-<HxButton Color="ThemeColor.Success"
-          Text="Jsem pro"
-          CssClass="w-100"
-          OnClick="HandleInFavorClick" />
+            <br/><br/>
+            
+            <HxButton @ref="btnAgainst"  
+                      Color="ThemeColor.Danger"
+                      Text="Jsem proti"
+                      CssClass="w-100"
+                      OnClick="HandleAgainstClick" />
 
-<HxButton Color="ThemeColor.Danger"
-          Text="Jsem proti"
-          CssClass="w-100"
-          OnClick="HandleAgainstClick" />
-
-<HxButton Color="ThemeColor.Warning"
-          Text="Zdržuji se"
-          CssClass="w-100"
-          OnClick="HandleAbstainedClick" />
-@code {
-    
+            <br/><br/>
+            
+            <HxButton @ref="btnAbstained" 
+                      Color="ThemeColor.Warning"
+                      Text="Zdržuji se"
+                      CssClass="w-100"
+                      OnClick="HandleAbstainedClick" />
+        </BodyTemplate>
+        <FooterTemplate>
+            @_member?.Name
+        </FooterTemplate>
+    </HxCard>
 }
+else
+{
+    <HxIcon Icon="BootstrapIcon.QuestionCircle" Size="IconSize.Large" CssClass="me-2" />
+}
+
+
+

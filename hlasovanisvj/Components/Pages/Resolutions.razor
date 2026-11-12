@@ -36,15 +36,26 @@
 				<HxGridColumn HeaderText="Akce">
 					
 					<ItemTemplate Context="item">
-						<HxButton Color="ThemeColor.Primary" 
-						          Text="Oteřít hlasování"
-						          OnClick="HandleOpenResolutionButtonClick"></HxButton>
+						@if(openedResolutionId == item.Id)
+						{
+							<HxButton Color="ThemeColor.Danger"
+							          Text="Uzavřít hlasování"
+							          OnClick="HandleCloseResolutionButtonClick"></HxButton>
+						}
+						else
+						{
+							<HxButton Color="ThemeColor.Primary"
+							          Text="Otevřít hlasování"
+							          OnClick="@(() => HandleOpenResolutionButtonClick(item.Id))"></HxButton>
+						}
 					</ItemTemplate>
 				</HxGridColumn>
 			</Columns>
 		</HxGrid>
 	</DataTemplate>
 	<DetailTemplate>
-		dataItemEditComponent: {currentResolution.Id: @currentResolution?.Id}
+		
 	</DetailTemplate>
 </HxListLayout>
+
+<ResolutionDetail @ref="resolutionDetail" OnClosed="HandleDetailClosed"></ResolutionDetail>

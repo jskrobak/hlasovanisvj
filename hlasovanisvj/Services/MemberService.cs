@@ -5,12 +5,37 @@ using Microsoft.EntityFrameworkCore;
 
 namespace hlasovanisvj.Services;
 
-public class MemberService(AppDbContext dbContext)
+public class MemberService(IDbContextFactory<AppDbContext> dbFactory)
 {
-    public GridDataProviderResult<Member> GetGridData(GridDataProviderRequest<Member> req, int organizationId, MemberFilter filterModel)
+    public async Task SyncPrincipalsAsync(int memberId, IEnumerable<int> principalIds)
     {
+        var dbContext = await dbFactory.CreateDbContextAsync();
+        var member = await dbContext.Members
+            .Include(m => m.Principals)
+            .FirstOrDefaultAsync(m => m.Id == memberId);
+        
+        member.Principals.Clear();
+        
+        await dbContext.SaveChangesAsync();
+        
+        var selectedPrincipals = await dbContext.Members
+            .Where(m => principalIds.Contains(m.Id))
+            .ToListAsync();
+        
+        member.Principals = selectedPrincipals;
+        //dbContext.Update(member);
+        await dbContext.SaveChangesAsync();
+    }
+    
+    
+    public GridDataProviderResult<Member> GetAll(GridDataProviderRequest<Member> req, int sessionId, MemberFilter filterModel)
+    {
+        var dbContext = dbFactory.CreateDbContext();
+        
         var data = dbContext.Members
-            .Where(m => m.OrganizationId == organizationId);
+            .Include(m => m.Principals)
+            .Include(m => m.Proxy)
+            .Where(m => m.SessionId == sessionId);
             
         if(!string.IsNullOrWhiteSpace(filterModel.Name))
             data = data.Where(p => p.Name.Contains(filterModel.Name));
@@ -25,14 +50,27 @@ public class MemberService(AppDbContext dbContext)
         };
     }
     
-    public async Task<List<Member>> GetMembersAsync(int orgId)
+    public async Task<List<Member>> GetPresentWithChoiseAsync (int sessionId)
     {
-        return await dbContext.Members.Where(m => m.OrganizationId == orgId).ToListAsync();
+        var dbContext = await dbFactory.CreateDbContextAsync();
+        return await dbContext.Members
+            .AsNoTracking()
+            .Where(m => m.SessionId == sessionId && m.IsPresent)
+            .Include(m => m.Votes)
+            .Include(m => m.Proxy)
+            .ToListAsync();
     }
     
-    public async Task ClearMembersAsync(int orgId)
+    public async Task<List<Member>> GetMembersAsync(int sessionId)
     {
-        var members = await dbContext.Members.Where(m => m.OrganizationId == orgId)
+        var dbContext = await dbFactory.CreateDbContextAsync();
+        return await dbContext.Members.Where(m => m.SessionId == sessionId).ToListAsync();
+    }
+    
+    public async Task ClearMembersAsync(int sessionId)
+    {
+        var dbContext = await dbFactory.CreateDbContextAsync();
+        var members = await dbContext.Members.Where(m => m.SessionId == sessionId)
             .ToListAsync();
         
         dbContext.Members.RemoveRange(members);
@@ -41,6 +79,7 @@ public class MemberService(AppDbContext dbContext)
     
     public async Task InsertMembers(IEnumerable<Member> members)
     {
+        var dbContext = await dbFactory.CreateDbContextAsync();
         await dbContext.AddRangeAsync(members);
         await dbContext.SaveChangesAsync();
     }

@@ -22,6 +22,6 @@ public class Member
     public Member? Proxy { get; set; } //Ten, kdo má plnou moc
     public int? ProxyId { get; set; }
 
-    public int OrganizationId { get; set; }
-    public Organization Organization { get; set; }
+    public int SessionId { get; set; }
+    public Session Session { get; set; }
 }

@@ -66,3 +66,13 @@ nunit-*.xml
 
 # Lokální data adresáře
 .data/
+# macOS
+.DS_Store
+
+# JetBrains Rider (uživatelská a lokální nastavení)
+*.DotSettings.user
+.idea/
+
+# Lokální screenshoty v rootu repa (obrázky aplikace jsou v wwwroot/img)
+/Greenshot*.png
+/import0*.png

@@ -19,4 +19,9 @@ public static class Extensions
         var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         return new ClaimsPrincipal(identity);
     }
+    
+    public static VoteChoice? GetVoteChoice(this Member member, int resolutionId)
+    {
+        return member.Votes.FirstOrDefault(v => v.ResolutionId == resolutionId)?.Choice;
+    }
 }

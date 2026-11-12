@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using Ganss.Excel;
 using Havit.Blazor.Components.Web;
 using Havit.Blazor.Components.Web.Bootstrap;
 using hlasovanisvj.Components.Shared;
@@ -22,7 +23,8 @@ public partial class Members(IJSRuntime jsRuntime,
     DataImportService importService,
     AttendanceService attendanceService, 
     UserService userService,
-    MemberService memberService)
+    MemberService memberService,
+    SessionService sessionService)
 {
     
     private Member? currentMember = null;
@@ -33,23 +35,33 @@ public partial class Members(IJSRuntime jsRuntime,
     private HxInputFile hxInputFileComponent;
     private DotNetObjectReference<Members>? objRef;
     private double totalPresentShare = 0;
+    private int currentSessionId;
+    private Session currentSession;
     
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        //totalPresentShare = await AttendanceService.GetTotalPresentShareAsync();
+        if(currentSessionId == 0)
+            navigationManager.NavigateTo("/");
     }
+    
 
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
-        totalPresentShare = await attendanceService.GetTotalPresentShareAsync();
+        
+        var user = await userService.GetCurrentUserAsync();
+        
+        currentSession = await sessionService.GetCurrentSessionAsync(user.OrganizationId);
+        
+        currentSessionId = currentSession?.Id ?? 0;
+        
+        totalPresentShare = await attendanceService.GetTotalPresentShareAsync(currentSessionId);
     }
 
     async Task<GridDataProviderResult<Member>> GetGridData(GridDataProviderRequest<Member> req)
     {
-        var user = await userService.GetCurrentUserAsync();
-        return memberService.GetGridData(req, user.OrganizationId, filterModel);
+        return memberService.GetAll(req, currentSessionId, filterModel);
     }
 
     async Task HandleSelectedDataItemChanged()
@@ -65,8 +77,8 @@ public partial class Members(IJSRuntime jsRuntime,
 
     private async Task HandlePrintPdf()
     {
-        var user = await userService.GetCurrentUserAsync();
-        var data = memberService.GetMembersAsync(user.OrganizationId);
+        var members = await memberService.GetMembersAsync(currentSessionId);
+        var data = pdfService.GeneratePdf(members);
         
         var guid = Guid.NewGuid();
         memoryCache.Set(guid, data);
@@ -82,8 +94,7 @@ public partial class Members(IJSRuntime jsRuntime,
 
         try
         {
-            var user = await userService.GetCurrentUserAsync();
-            await importService.ImportHtmlAsync(user.Organization, new MemoryStream(data));
+            await importService.ImportHtmlAsync(currentSessionId, new MemoryStream(data));
 
             messengerService.AddInformation("Hotovo!");
         }
@@ -110,28 +121,62 @@ public partial class Members(IJSRuntime jsRuntime,
     [JSInvokable]
     public async Task OnQrScanned(string text)
     {
-        if(!Guid.TryParse(text, out var memberId))
+        var parts = text.Split("?guid=");
+        if (parts.Length != 2 || !Guid.TryParse(parts[1], out var memberId))
         {
             messengerService.AddError("Invalid QR code");
             return;
         }
-        
+
         var member = dbContext.Members.FirstOrDefault(m => m.GlobalId == memberId);
         if (member == null)
             return;
-        member.IsPresent = !member.IsPresent;
-        await attendanceService.SavePresenceAsync(member);
         
-        totalPresentShare = await attendanceService.GetTotalPresentShareAsync();
+        member.IsPresent = !member.IsPresent;
+        await attendanceService.SavePresenceAsync(member.Id, member.IsPresent);
+        
+        totalPresentShare = await attendanceService.GetTotalPresentShareAsync(currentSessionId);
         
         StateHasChanged();
+        
+        if(member.IsPresent)
+            messengerService.AddInformation($"Přišel:  {member.Name}");
+        else
+            messengerService.AddWarning($"Odešel:  {member.Name}");
+        //await HandleScanQrClick();
     }
 
 
     private async Task SavePresenceAsync(Member item)
     {
-        await attendanceService.SavePresenceAsync(item);
-        totalPresentShare = await attendanceService.GetTotalPresentShareAsync();
+        await attendanceService.SavePresenceAsync(item.Id, item.IsPresent);
+        totalPresentShare = await attendanceService.GetTotalPresentShareAsync(currentSessionId);
         StateHasChanged();
     }
+
+    private async Task HandleDetailClosed(object arg)
+    {
+        await gridComponent.RefreshDataAsync();
+    }
+
+    private async Task HandleExportExcel()
+    {
+        var members = await memberService.GetMembersAsync(currentSessionId);
+        using var memoryStream = new MemoryStream();
+        await new ExcelMapper().SaveAsync(memoryStream, members
+            .Select(m => new
+        {
+            m.Id, 
+            m.Name,
+            m.IsPresent,
+             Principals = string.Join(", ", m.Principals.Select(p => p.Name)),
+        } ), "Members");
+        
+        var guid = Guid.NewGuid();
+        memoryCache.Set(guid, memoryStream.ToArray());
+        
+        var url = $"downloadXls?guid={guid}";
+        navigationManager.NavigateTo(url, forceLoad: true); 
+    }
+
 }

@@ -12,7 +12,8 @@ namespace hlasovanisvj.Components.Pages;
 public partial class Register(
     AppDbContext dbContext,
     IHxMessengerService messengerService,
-    ISecurityService securityService) : ComponentBase
+    ISecurityService securityService,
+    NavigationManager nav) : ComponentBase
 {
     private readonly UserRegisterModel _model = new();
     private EditForm? _editForm;
@@ -35,10 +36,17 @@ public partial class Register(
                 }
             };
             
-            dbContext.Users.Add(user);
+            dbContext.Add(user);
+            
+            await dbContext.SaveChangesAsync();
+            
+            user.OrganizationId = user.Organization.Id;
+            
             await dbContext.SaveChangesAsync();
             
             messengerService.AddInformation("Registration successful. You can now log in.");
+            
+            nav.NavigateTo("login");
         }
         catch (Exception ex)
         {

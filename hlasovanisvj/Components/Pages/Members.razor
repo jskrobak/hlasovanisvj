@@ -1,19 +1,26 @@
-@page "/"
+@page "/Members"
 
 @using hlasovanisvj.Domain
 
 @attribute [Authorize]
 
+<style>
+	.virtualized-table-container {
+		overflow: auto;
+		height: calc(100vh - 160px);
+	}
+</style>
+
 <div id="qr-reader" style="width:300px"></div>
 
-<HxListLayout Title="Členové" TFilterModel="MemberFilter"
+<HxListLayout Title="Účastníci" TFilterModel="MemberFilter"
               @bind-FilterModel="filterModel"
               @bind-FilterModel:after="gridComponent.RefreshDataAsync">
 	<TitleTemplate>
-		Členové (účast:  &nbsp;
+		@currentSession.Name (@currentSession.Date.ToShortDateString()) - Účast  &nbsp;
 		<HxBadge Color="@(totalPresentShare > 50 ? ThemeColor.Success: ThemeColor.Danger)">
-			@totalPresentShare.ToString("0.000"))
-		</HxBadge>&nbsp;%)
+			@totalPresentShare.ToString("0.000")
+		</HxBadge>&nbsp;%
 	</TitleTemplate>
 	<CommandsTemplate>
 		<HxButton Text="Import"
@@ -26,7 +33,7 @@
 		
 		<HxButton Text="Excel"
 		          Color="ThemeColor.Primary"
-		          Icon="BootstrapIcon.FiletypeXlsx"/>
+		          Icon="BootstrapIcon.FiletypeXlsx" OnClick="HandleExportExcel"/>
 		
 		<HxButton Text="QrScan"
 		          Color="ThemeColor.Primary"
@@ -37,8 +44,8 @@
 	</FilterTemplate>
 	<DataTemplate>
 		<HxGrid @ref="gridComponent"
+		        TableContainerCssClass="virtualized-table-container"
 		        ContentNavigationMode="GridContentNavigationMode.InfiniteScroll"
-		        TableContainerCssClass="scrollable-table-container"
 		        HeaderRowCssClass="sticky-top"
 		        FooterRowCssClass="sticky-bottom"
 		        TItem="Member"
@@ -64,7 +71,7 @@
 				              SortKeySelector="p => p.IsPresent">
 					
 					<ItemTemplate Context="item">
-						<HxSwitch @bind-Value="@item.IsPresent"  
+						<HxSwitch @bind-Value="@item.IsPresent" Enabled="@(item.Proxy==null)"  
 						          @bind-Value:after="@(async () => await SavePresenceAsync(item))" />
 					</ItemTemplate>
 				</HxGridColumn>
@@ -72,7 +79,7 @@
 		</HxGrid>
 	</DataTemplate>
 	<DetailTemplate>
-		dataItemEditComponent: {currentMember.Id: @currentMember?.Id}
+		
 	</DetailTemplate>
 </HxListLayout>
 
@@ -81,8 +88,33 @@
 		<HxInputFile @ref="hxInputFileComponent" UploadUrl="/upload" OnUploadCompleted="HandleHtmlFileUploaded"></HxInputFile>
 		<br/>
 		<HxButton Icon="@BootstrapIcon.Upload" Text="Importovat" Color="ThemeColor.Secondary" OnClick="HandleUploadHtmlClick" />
-	</BodyTemplate>
+		<br/><br/><br/>
+		<h3>Návod</h3>
+		<p>
+			Uložte stránku s výpisem vlastníku z KN. 
+			Jděte na stránku <a href="https://nahlizenidokn.cuzk.gov.cz/VyberBudovu/Stavba/InformaceO" target="_blank">Nahlížení do KN</a>
+		</p>
+		<p>
+			Vyplňte číslo popisné a klikněte na "Hledat".
+			<br/>
+			<img src="img/import01.png" width="400"/>
+		</p>	
+		<p>
+			Musíte se přihlásit (např.pomocí bankovní identity)
+			<br/>
+			<img src="img/import02.png" width="400"/>
+		</p>
+		<p>
+			Poté uložte stránku (Ctrl+S) jako "Webová stránka, pouze Html".
+			<img src="img/import03.png" width="400"/>
+		</p>
+		<p>
+			Uložený html soubor nahrajte pomocí výše uvedeného formuláře.
+		</p>
+		
+		
+		</BodyTemplate>
 </HxOffcanvas>
 
-<MemberDetail @ref="memberDetail" Model="@currentMember"></MemberDetail>
+<MemberDetail @ref="memberDetail" OnClosed="HandleDetailClosed" Model="@currentMember"></MemberDetail>
 

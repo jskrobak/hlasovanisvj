@@ -1,0 +1,10 @@
+@page "/Org"
+<h3>Organizace</h3>
+
+<EditForm Model="@organization" OnValidSubmit="@(async () => { await SaveOrg(); })">
+    <DataAnnotationsValidator/>
+    <HxInputText @bind-value="organization.Name" Label="Název"></HxInputText>
+    
+    <HxSubmit Color="ThemeColor.Primary" Icon="BootstrapIcon.Save">Uložit</HxSubmit>
+
+</EditForm>

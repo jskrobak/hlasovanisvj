@@ -1,0 +1,21 @@
+@using hlasovanisvj.Domain
+
+<HxOffcanvas @ref="resolutionDetailOffCanvasComponent" Title="Edit" 
+             Backdrop="OffcanvasBackdrop.Static"
+             OnClosed="HandleClosed">
+    <BodyTemplate>
+        <h5>@Model.Title</h5>
+        
+        <EditForm Id="@FormId" Model="@Model" OnValidSubmit="@(async () => { await SaveResolution(); })">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            
+            <HxInputText Label="Název" @bind-value="Model.Title"></HxInputText>
+            <HxInputText Label="Otázka" @bind-value="Model.Question"></HxInputText>
+
+        </EditForm>
+    </BodyTemplate>
+    <FooterTemplate>
+        <HxSubmit Color="ThemeColor.Primary" FormId="@FormId" Icon="BootstrapIcon.Save">Uložit</HxSubmit>
+    </FooterTemplate>
+</HxOffcanvas>
