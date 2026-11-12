@@ -1,0 +1,163 @@
+@page "/Session/{SessionId:int}"
+@using hlasovanisvj.Domain
+@using hlasovanisvj.Models
+@attribute [Authorize]
+
+@if (notFound)
+{
+	<HxAlert Color="ThemeColor.Warning">Schůze nenalezena.</HxAlert>
+}
+else if (report == null)
+{
+	<HxSpinner Color="ThemeColor.Primary"/>
+}
+else
+{
+	var session = report.Session;
+	var openedId = session.OpenedResolutionId;
+
+	<div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+		<div class="me-auto">
+			<div class="text-muted small">@report.OrganizationName</div>
+			<h3 class="mb-0">@session.Name</h3>
+			<div class="text-muted">
+				@session.Date.ToString("d. M. yyyy")
+				@if (session.IsClosed)
+				{
+					<HxBadge Color="ThemeColor.Secondary" CssClass="ms-2">Uzavřená</HxBadge>
+				}
+				else
+				{
+					<HxBadge Color="ThemeColor.Info" CssClass="ms-2">Probíhá / připravuje se</HxBadge>
+				}
+			</div>
+		</div>
+		<a class="btn btn-primary" href="@($"sessions/{SessionId}/report.pdf")" target="_blank">
+			<HxIcon Icon="BootstrapIcon.FiletypePdf"/> Stáhnout PDF
+		</a>
+		<a class="btn btn-outline-secondary" href="/">Zpět na schůze</a>
+	</div>
+
+	<div class="row g-3 mb-4">
+		<div class="col-6 col-md-3">
+			<div class="border rounded p-3 h-100">
+				<div class="text-muted small">Vlastníci</div>
+				<div class="fs-4">@report.Owners.Count()</div>
+			</div>
+		</div>
+		<div class="col-6 col-md-3">
+			<div class="border rounded p-3 h-100">
+				<div class="text-muted small">Přítomno (vč. zastoupených)</div>
+				<div class="fs-4">@report.PresentOwnersCount</div>
+			</div>
+		</div>
+		<div class="col-6 col-md-3">
+			<div class="border rounded p-3 h-100">
+				<div class="text-muted small">Přítomné podíly</div>
+				<div class="fs-4">@report.PresentShare.ToString("0.000") %</div>
+			</div>
+		</div>
+		<div class="col-6 col-md-3">
+			<div class="border rounded p-3 h-100">
+				<div class="text-muted small">Usnášeníschopnost</div>
+				<div class="fs-4">
+					@if (report.IsQuorate)
+					{
+						<HxBadge Color="ThemeColor.Success">Ano</HxBadge>
+					}
+					else
+					{
+						<HxBadge Color="ThemeColor.Danger">Ne</HxBadge>
+					}
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<h4>Usnesení</h4>
+	@if (!report.Resolutions.Any())
+	{
+		<p class="text-muted">Ke schůzi nejsou žádná usnesení.</p>
+	}
+	else
+	{
+		<div class="table-responsive mb-4">
+			<table class="table table-sm align-middle">
+				<thead>
+				<tr>
+					<th>#</th><th>Usnesení</th><th class="text-end">Pro</th><th class="text-end">Proti</th>
+					<th class="text-end">Zdržel se</th><th class="text-end">Přítomno</th><th>Výsledek</th>
+				</tr>
+				</thead>
+				<tbody>
+				@foreach (var (r, i) in report.Resolutions.Select((r, i) => (r, i + 1)))
+				{
+					var result = SessionReport.ResultText(r, r.Id == openedId);
+					<tr>
+						<td>@i</td>
+						<td>
+							<div class="fw-semibold">@r.Title</div>
+							<div class="small text-muted">@r.Question</div>
+						</td>
+						@if (r.HasResult && r.Id != openedId)
+						{
+							<td class="text-end">@r.PercentOfPresent(r.InFavorShare).ToString("0.00") %</td>
+							<td class="text-end">@r.PercentOfPresent(r.AgainstShare).ToString("0.00") %</td>
+							<td class="text-end">@r.PercentOfPresent(r.AbstainedShare).ToString("0.00") %</td>
+							<td class="text-end">@r.PresentShare?.ToString("0.000") %</td>
+						}
+						else
+						{
+							<td colspan="4"></td>
+						}
+						<td>
+							<HxBadge Color="@(result switch { "přijato" => ThemeColor.Success, "nepřijato" => ThemeColor.Danger, "hlasování probíhá" => ThemeColor.Warning, _ => ThemeColor.Secondary })">@result</HxBadge>
+						</td>
+					</tr>
+				}
+				</tbody>
+			</table>
+			<div class="small text-muted">
+				Procenta jsou z podílů přítomných při uzavření hlasování. „Přijato“ = nadpoloviční většina hlasů přítomných
+				(výchozí pravidlo § 1206 NOZ; stanovy mohou pro některá rozhodnutí vyžadovat jinou většinu).
+			</div>
+		</div>
+	}
+
+	<h4>Prezenční listina</h4>
+	<div class="table-responsive">
+		<table class="table table-sm table-striped align-middle">
+			<thead>
+			<tr>
+				<th>Č.</th><th>Vlastník</th><th>Jednotky</th><th class="text-end">Podíl</th><th>Účast</th><th>Zastupuje</th>
+			</tr>
+			</thead>
+			<tbody>
+			@foreach (var m in report.Members)
+			{
+				<tr class="@(m.IsPresent ? "" : "text-muted")">
+					<td>@m.Id</td>
+					<td>
+						@m.Name
+						@if (m.IsGuest)
+						{
+							<HxBadge Color="ThemeColor.Info" CssClass="ms-1">host</HxBadge>
+						}
+					</td>
+					<td>@string.Join(", ", m.Units)</td>
+					<td class="text-end text-nowrap">@(m.IsGuest ? "–" : $"{m.ShareValue:0.000} %")</td>
+					<td>@SessionReport.AttendanceText(m)</td>
+					<td>@string.Join(", ", m.Principals.Select(p => p.Name))</td>
+				</tr>
+			}
+			</tbody>
+			<tfoot>
+			<tr class="fw-semibold">
+				<td colspan="3">Celkem přítomno</td>
+				<td class="text-end">@report.PresentShare.ToString("0.000") %</td>
+				<td colspan="2">z @report.TotalShare.ToString("0.000") %</td>
+			</tr>
+			</tfoot>
+		</table>
+	</div>
+}

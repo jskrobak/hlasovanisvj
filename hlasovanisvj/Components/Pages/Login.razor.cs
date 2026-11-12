@@ -14,6 +14,10 @@ public partial class Login(NavigationManager navigationManager,
     private LoginRequest model = new();
     private IJSObjectReference? _mod;
     private bool _didLogout;
+    private bool googleError;
+
+    private string GoogleLoginUrl =>
+        "login/google" + (string.IsNullOrEmpty(model.ReturnUrl) ? "" : $"?returnUrl={Uri.EscapeDataString(model.ReturnUrl)}");
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -33,6 +37,7 @@ public partial class Login(NavigationManager navigationManager,
         var q = System.Web.HttpUtility.ParseQueryString(uri.Query);
         model.ReturnUrl = q["returnUrl"];
         _didLogout = string.Equals(q["loggedout"], "1", StringComparison.Ordinal);
+        googleError = string.Equals(q["error"], "google", StringComparison.Ordinal);
     }
 
     private async Task HandleLogin()

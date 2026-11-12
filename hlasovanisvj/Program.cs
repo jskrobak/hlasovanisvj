@@ -5,7 +5,9 @@ using hlasovanisvj.Components;
 using hlasovanisvj.Data;
 using hlasovanisvj.Hubs;
 using hlasovanisvj.Services;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -39,7 +41,10 @@ builder.Services.AddRazorComponents()
 			options.AccessDeniedPath = "/login";
 			options.SlidingExpiration = true;
 			options.ExpireTimeSpan = TimeSpan.FromDays(7);
-		});
+		})
+		.AddGoogleIfConfigured(builder.Configuration, out var googleEnabled);
+
+	builder.Services.AddSingleton(new ExternalAuthInfo(googleEnabled));
 
 
 	builder.Services.AddAuthorization();
@@ -58,11 +63,31 @@ builder.Services.AddScoped<MemberService>();
 builder.Services.AddScoped<VoteService>();
 builder.Services.AddScoped<SessionService>();
 builder.Services.AddScoped<OrganizationService>();
+builder.Services.AddScoped<SessionReportService>();
+builder.Services.AddScoped<PasswordResetService>();
+
+var smtp = builder.Configuration.GetSection("Smtp").Get<SmtpOptions>() ?? new SmtpOptions();
+if (string.IsNullOrWhiteSpace(smtp.Host))
+	builder.Services.AddSingleton<IEmailSender, LogEmailSender>();
+else
+	builder.Services.AddSingleton<IEmailSender>(new SmtpEmailSender(smtp));
+builder.Services.AddSingleton<SessionReportPdf>();
 
 builder.Services.AddTransient<IUploadService, UploadToMemoryCacheService>();
 builder.Services.AddMemoryCache();
 
+// Za reverse proxy (nginx/Traefik): respektovat X-Forwarded-Proto/For, aby Google redirect_uri
+// a odkazy byly https. Aplikace má být dostupná jen přes proxy.
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+	options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedHost;
+	options.KnownIPNetworks.Clear();
+	options.KnownProxies.Clear();
+});
+
 var app = builder.Build();
+
+app.UseForwardedHeaders();
 
 // Aplikuje čekající EF migrace při startu (nová instance si databázi založí sama).
 await using (var scope = app.Services.CreateAsyncScope())
@@ -125,6 +150,22 @@ app.MapGet("/downloadXls", async (HttpContext http, IMemoryCache memoryCache, [F
 	//return Results.File(data, "application/octet-stream", $"členové.xlsx");
 }).DisableAntiforgery(); 
 
+// --- PDF report schůze (jen pro organizaci, které schůze patří) ---
+app.MapGet("/sessions/{id:int}/report.pdf", async (int id, HttpContext http,
+	SessionReportService reportService, SessionReportPdf reportPdf) =>
+{
+	var organizationId = await reportService.GetOrganizationIdAsync(http.User.FindFirstValue(ClaimTypes.Email));
+	if (organizationId == null)
+		return Results.Forbid();
+
+	var report = await reportService.GetReportAsync(id, organizationId.Value);
+	if (report == null)
+		return Results.NotFound();
+
+	var fileName = $"schuze-{report.Session.Date:yyyy-MM-dd}-{id}.pdf";
+	return Results.File(reportPdf.Generate(report), "application/pdf", fileName);
+}).RequireAuthorization();
+
 // --- Login endpoint (POST) ---
 app.MapPost("/login",
 	async (HttpContext http, [FromBody] LoginRequest req, AppDbContext dbContext, ISecurityService securityService) =>
@@ -140,6 +181,8 @@ app.MapPost("/login",
 
 		return Results.NoContent();
 	});
+
+app.MapGoogleAuth(googleEnabled);
 
 // --- Logout endpoint (POST/GET) ---
 app.MapPost("/logout", async (HttpContext http) =>

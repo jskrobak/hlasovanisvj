@@ -51,6 +51,9 @@
 				<HxGridColumn HeaderText="Akce">
 					
 					<ItemTemplate Context="item">
+						<a class="btn btn-outline-primary me-1" href="@($"Session/{item.Id}")" title="Detail a report schůze">
+							<HxIcon Icon="BootstrapIcon.FileEarmarkText"/> Detail
+						</a>
 						@if(currentSessionId != item.Id)
 						{
 							<HxButton Color="@(item.IsClosed ? ThemeColor.Secondary : ThemeColor.Primary)"
