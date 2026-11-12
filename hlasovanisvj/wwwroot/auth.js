@@ -1,3 +1,4 @@
+// Přihlášení přes POST /login (nastaví cookie). Navigaci po úspěchu řeší volající.
 export async function postLoginJson(url, payload) {
     const resp = await fetch(url, {
         method: "POST",
@@ -6,7 +7,7 @@ export async function postLoginJson(url, payload) {
         credentials: "include"
     });
 
-    if (resp.redirected) { window.location = resp.url; return; }
-    if (resp.ok) { window.location.reload(); }
-    else { throw new Error("Login failed"); }
+    if (!resp.ok) {
+        throw new Error("Login failed");
+    }
 }

@@ -13,7 +13,7 @@ public class UploadToMemoryCacheService(ILogger<UploadToMemoryCacheService> logg
         await file.CopyToAsync(stream);
         var fileBytes = stream.ToArray();
     
-        memoryCache.Set(id, fileBytes);
+        memoryCache.Set(id, fileBytes, TimeSpan.FromMinutes(10));
     
         return id;
     }

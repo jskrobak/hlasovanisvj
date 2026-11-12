@@ -1,0 +1,23 @@
+@inject ExternalAuthInfo ExternalAuth
+
+<EditForm Model="@model" OnValidSubmit="@HandleLogin">
+    <DataAnnotationsValidator/>
+
+    <HxInputText Type="InputType.Email" Label="E-mail" @bind-Value="model.Username" InputSize="@InputSize"/>
+    <HxInputText Type="InputType.Password" Label="Heslo" @bind-Value="model.Password" InputSize="@InputSize"/>
+
+    <div class="d-flex flex-wrap align-items-center gap-3 mt-3">
+        <HxSubmit Color="ThemeColor.Primary" Enabled="@(!busy)" Size="@ButtonSize">Přihlásit</HxSubmit>
+        <a href="ForgotPassword" class="small">Zapomenuté heslo?</a>
+    </div>
+</EditForm>
+
+@if (ExternalAuth.GoogleEnabled)
+{
+    <div class="d-flex align-items-center gap-2 my-3 text-body-secondary small">
+        <hr class="flex-grow-1 m-0"/> nebo <hr class="flex-grow-1 m-0"/>
+    </div>
+    <a class="btn btn-outline-secondary w-100" href="@GoogleLoginUrl">
+        <HxIcon Icon="BootstrapIcon.Google" CssClass="me-1"/> Přihlásit přes Google
+    </a>
+}

@@ -1,30 +1,36 @@
 @page "/RegisterGoogle"
+@layout Layout.LandingLayout
+<div class="container py-5" style="max-width: 480px">
+    <div class="card shadow-sm">
+        <div class="card-body p-4">
+            <h1 class="h4 mb-3">Dokončení registrace přes Google</h1>
 
-<h3>Dokončení registrace přes Google</h3>
+            @if (Error == "exists")
+            {
+                <HxAlert Color="ThemeColor.Danger">
+                    Účet s tímto e-mailem už existuje. Přihlaste se heslem
+                    (nebo si ho <a href="ForgotPassword">obnovte</a>) – účet Google se pak propojí sám, pokud je e-mail ověřený.
+                </HxAlert>
+            }
+            else if (Error == "name")
+            {
+                <HxAlert Color="ThemeColor.Danger">Název organizace musí mít 2–200 znaků.</HxAlert>
+            }
 
-@if (Error == "exists")
-{
-    <HxAlert Color="ThemeColor.Danger">
-        Účet s tímto e-mailem už existuje. Přihlaste se heslem
-        (nebo si ho <a href="ForgotPassword">obnovte</a>) – účet Google se pak propojí sám, pokud je e-mail ověřený.
-    </HxAlert>
-}
-else if (Error == "name")
-{
-    <HxAlert Color="ThemeColor.Danger">Název organizace musí mít 2–200 znaků.</HxAlert>
-}
+            <p>Účet Google zatím není propojený s žádnou organizací. Zadejte název vašeho SVJ a registrace se dokončí.</p>
 
-<p>Účet Google zatím není propojený s žádnou organizací. Zadejte název vašeho SVJ a registrace se dokončí.</p>
-
-@* Obyčejný POST formulář – endpoint čte Google identitu z krátkodobé cookie. *@
-<form method="post" action="register/google" style="max-width: 400px">
-    <div class="mb-3">
-        <label class="form-label" for="organizationName">Organizace</label>
-        <input class="form-control" id="organizationName" name="organizationName" required minlength="2" maxlength="200" />
+            @* Obyčejný POST formulář – endpoint čte Google identitu z krátkodobé cookie. *@
+            <form method="post" action="register/google" style="max-width: 400px">
+                <div class="mb-3">
+                    <label class="form-label" for="organizationName">Organizace</label>
+                    <input class="form-control" id="organizationName" name="organizationName" required minlength="2" maxlength="200" />
+                </div>
+                <button type="submit" class="btn btn-primary">Dokončit registraci</button>
+                <a class="btn btn-link" href="register/google/cancel">Zrušit</a>
+            </form>
+        </div>
     </div>
-    <button type="submit" class="btn btn-primary">Dokončit registraci</button>
-    <a class="btn btn-link" href="register/google/cancel">Zrušit</a>
-</form>
+</div>
 
 @code {
     [SupplyParameterFromQuery] public string? Error { get; set; }

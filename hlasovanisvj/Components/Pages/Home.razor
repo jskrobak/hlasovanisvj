@@ -1,0 +1,193 @@
+@page "/"
+@layout Layout.LandingLayout
+@inject NavigationManager Navigation
+
+<PageTitle>Schůze SVJ – hlasování na shromáždění vlastníků</PageTitle>
+
+@if (!checkedAuth)
+{
+    return;
+}
+
+<section class="hero">
+    <div class="container py-5">
+        <div class="row g-5 align-items-center">
+            <div class="col-lg-7">
+                <span class="badge rounded-pill text-bg-light border mb-3">Pro výbory a předsedy SVJ</span>
+                <h1 class="display-5 fw-bold lh-sm mb-3">
+                    Shromáždění vlastníků bez sčítání hlasů na papíře
+                </h1>
+                <p class="lead text-body-secondary mb-4">
+                    Vlastníci hlasují na svém telefonu přes QR kód z hlasovacího lístku. Aplikace hlasy přepočítá
+                    podle spoluvlastnických podílů, hlídá usnášeníschopnost a po schůzi připraví
+                    prezenční listinu i výsledky hlasování v PDF.
+                </p>
+                <div class="d-flex flex-wrap gap-2">
+                    <a class="btn btn-primary btn-lg" href="Register">Založit účet</a>
+                    <a class="btn btn-outline-secondary btn-lg" href="#jak-to-funguje">Jak to funguje</a>
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="card shadow border-0">
+                    <div class="card-body p-4">
+                        <h2 class="h5 mb-3">Přihlášení</h2>
+                        <LoginForm/>
+                        <p class="mt-4 mb-0 small text-body-secondary">
+                            Nemáte účet? <a href="Register">Zaregistrujte své SVJ</a>.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section id="jak-to-funguje" class="py-5">
+    <div class="container">
+        <h2 class="h3 fw-bold mb-1">Jak to funguje</h2>
+        <p class="text-body-secondary mb-4">Od seznamu vlastníků po archiv výsledků ve čtyřech krocích.</p>
+
+        <div class="row g-4">
+            @foreach (var (step, i) in steps.Select((s, i) => (s, i + 1)))
+            {
+                <div class="col-sm-6 col-lg-3">
+                    <div class="step h-100">
+                        <div class="step-number">@i</div>
+                        <HxIcon Icon="@step.Icon" CssClass="step-icon"/>
+                        <h3 class="h6 fw-semibold mt-3">@step.Title</h3>
+                        <p class="small text-body-secondary mb-0">@step.Text</p>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</section>
+
+<section class="py-5 bg-body-tertiary">
+    <div class="container">
+        <div class="row g-5 align-items-center">
+            <div class="col-lg-5">
+                <h2 class="h3 fw-bold mb-3">Hlasuje se mobilem, výsledky vidíte hned</h2>
+                <p class="text-body-secondary">
+                    Po otevření hlasování stačí, aby vlastníci načetli QR kód ze svého lístku a klepli na volbu.
+                    Předsedající na projektoru sleduje, kdo už hlasoval a jak dopadají podíly.
+                    Kdo telefon nemá, za toho hlas zadáte ručně.
+                </p>
+            </div>
+            <div class="col-lg-7">
+                <div class="row g-3 justify-content-center">
+                    <div class="col-sm-5">
+                        <div class="mock-phone">
+                            <div class="small text-body-secondary text-center mb-1">Hlasujte</div>
+                            <div class="fw-semibold text-center">Oprava střechy</div>
+                            <div class="small text-body-secondary text-center mb-3">Souhlasíte s opravou střechy?</div>
+                            <div class="btn btn-success w-100 mb-2 pe-none">Jsem pro</div>
+                            <div class="btn btn-danger w-100 mb-2 pe-none">Jsem proti</div>
+                            <div class="btn btn-warning w-100 pe-none">Zdržuji se</div>
+                        </div>
+                    </div>
+                    <div class="col-sm-7">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body">
+                                <div class="small text-body-secondary">Průběžný výsledek (% přítomných podílů)</div>
+                                <div class="fw-semibold mb-3">Oprava střechy</div>
+                                @foreach (var bar in bars)
+                                {
+                                    <div class="d-flex justify-content-between small"><span>@bar.Label</span><span>@bar.Value %</span></div>
+                                    <div class="progress mb-2" role="progressbar" aria-label="@bar.Label" style="height: .6rem">
+                                        <div class="progress-bar @bar.Css" style="width: @bar.Value%"></div>
+                                    </div>
+                                }
+                                <div class="small text-body-secondary mt-3">Přítomno 68,4 % podílů · usnášeníschopné</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="py-5">
+    <div class="container">
+        <h2 class="h3 fw-bold mb-4">Co aplikace umí</h2>
+        <div class="row g-4">
+            @foreach (var f in features)
+            {
+                <div class="col-md-6 col-lg-4">
+                    <div class="d-flex gap-3">
+                        <HxIcon Icon="@f.Icon" CssClass="feature-icon"/>
+                        <div>
+                            <h3 class="h6 fw-semibold mb-1">@f.Title</h3>
+                            <p class="small text-body-secondary mb-0">@f.Text</p>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</section>
+
+<section class="py-5 border-top">
+    <div class="container text-center" style="max-width: 640px">
+        <h2 class="h3 fw-bold mb-2">Připravte příští shromáždění</h2>
+        <p class="text-body-secondary mb-4">Registrace zabere minutu. Stačí e-mail a název vašeho společenství.</p>
+        <a class="btn btn-primary btn-lg" href="Register">Založit účet</a>
+    </div>
+</section>
+
+@code {
+    private bool checkedAuth;
+
+    [CascadingParameter] private Task<AuthenticationState>? AuthState { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = AuthState == null ? null : (await AuthState).User;
+        if (user?.Identity?.IsAuthenticated == true)
+        {
+            Navigation.NavigateTo("Sessions", replace: true);
+            return;
+        }
+        checkedAuth = true;
+    }
+
+    private record Item(IconBase Icon, string Title, string Text);
+    private record Bar(string Label, int Value, string Css);
+
+    private readonly Item[] steps =
+    [
+        new(BootstrapIcon.FiletypeHtml, "Načtěte vlastníky",
+            "Importujte výpis vlastníků z katastru nemovitostí. Jednotky a spoluvlastnické podíly se načtou samy."),
+        new(BootstrapIcon.QrCodeScan, "Vytiskněte lístky",
+            "Každý vlastník dostane lístek s QR kódem. U vstupu ho naskenujete a prezence je hotová."),
+        new(BootstrapIcon.Phone, "Hlasujte",
+            "Otevřete hlasování o usnesení. Vlastníci hlasují na svých telefonech, výsledky se počítají průběžně."),
+        new(BootstrapIcon.FileEarmarkPdf, "Archivujte",
+            "Prezenční listina, výsledky usnesení a jmenovité hlasování v jednom PDF pro zápis ze schůze."),
+    ];
+
+    private readonly Bar[] bars =
+    [
+        new("Pro", 61, "bg-success"),
+        new("Proti", 24, "bg-danger"),
+        new("Zdržel se", 9, "bg-warning"),
+    ];
+
+    private readonly Item[] features =
+    [
+        new(BootstrapIcon.PieChart, "Hlasy podle podílů",
+            "Každý hlas má váhu spoluvlastnického podílu. Procenta se počítají z přítomných."),
+        new(BootstrapIcon.PersonCheck, "Plné moci a zástupci",
+            "Zmocněnec hlasuje i za zastoupené vlastníky. Zastupovat může i host, který není členem SVJ."),
+        new(BootstrapIcon.ShieldCheck, "Usnášeníschopnost",
+            "Přehled přítomných podílů na první pohled, ještě před prvním hlasováním."),
+        new(BootstrapIcon.Archive, "Historie schůzí",
+            "Každá schůze má vlastní seznam vlastníků. Uzavřené schůze zůstanou beze změny k nahlédnutí."),
+        new(BootstrapIcon.FileEarmarkPdf, "Report v PDF",
+            "Souhrn, usnesení s výsledky, prezenční listina s místem pro podpis a jmenovité hlasování."),
+        new(BootstrapIcon.Laptop, "Bez instalace",
+            "Funguje v prohlížeči na počítači i telefonu. Vlastníci nic instalovat nemusí."),
+    ];
+}

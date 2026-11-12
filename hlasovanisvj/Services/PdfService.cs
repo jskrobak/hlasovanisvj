@@ -31,7 +31,7 @@ public class PdfService(IConfiguration config)
             {
                 page.Size(PageSizes.A4); // A4 na výšku
                 page.Margin(PageMarginMm, QuestPDF.Infrastructure.Unit.Millimetre);
-                page.DefaultTextStyle(x => x.FontFamily("Arial"));
+                page.DefaultTextStyle(x => x.FontFamily("Arial", "Liberation Sans", "DejaVu Sans"));
 
                 page.Content().Column(col =>
                 {

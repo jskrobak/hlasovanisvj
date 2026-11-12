@@ -1,0 +1,10 @@
+**/bin/
+**/obj/
+.git/
+.idea/
+.claude/
+*.png
+!hlasovanisvj/wwwroot/**/*.png
+*.DotSettings.user
+**/._*
+.DS_Store

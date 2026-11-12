@@ -1,0 +1,12 @@
+# HTTPS certifikáty (Let's Encrypt) zařizuje Caddy automaticky.
+# Hlavní doména je schuzesvj.cz (používá se v QR kódech); ostatní na ni přesměrují.
+# www.schuzesvj.cz zatím nemá DNS záznam – po jeho přidání ho stačí připsat k přesměrování níže.
+
+schuzesvj.cz {
+	encode zstd gzip
+	reverse_proxy app:8080
+}
+
+schuzesvj.eu, www.schuzesvj.eu {
+	redir https://schuzesvj.cz{uri} permanent
+}

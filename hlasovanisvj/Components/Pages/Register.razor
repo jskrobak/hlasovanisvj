@@ -1,22 +1,33 @@
 @page "/Register"
 @inject ExternalAuthInfo ExternalAuth
-<h3>Registrace</h3>
+@layout Layout.LandingLayout
+<div class="container py-5" style="max-width: 480px">
+    <div class="card shadow-sm">
+        <div class="card-body p-4">
+            <h1 class="h4 mb-3">Registrace</h1>
 
-<EditForm Model="@_model" OnValidSubmit="@(async () => { await RegisterUser(); })">
-    <DataAnnotationsValidator/>
-    
-    <HxInputText Type="InputType.Email" Label="E-mail" @bind-Value="_model.Email"></HxInputText>
-    <HxInputText Label="Organizace" @bind-Value="_model.OrganizationName"></HxInputText>
-    <HxInputText Type="InputType.Password" Label="Heslo" @bind-Value="_model.Password"></HxInputText>
-    <HxInputText Type="InputType.Password" Label="Heslo" @bind-Value="_model.Password2"></HxInputText>
-    
-    <HxSubmit Color="ThemeColor.Primary">Registrovat</HxSubmit>
-</EditForm>
+            <EditForm Model="@_model" OnValidSubmit="@(async () => { await RegisterUser(); })">
+                <DataAnnotationsValidator/>
+                
+                <HxInputText Type="InputType.Email" Label="E-mail" @bind-Value="_model.Email"></HxInputText>
+                <HxInputText Label="Organizace" @bind-Value="_model.OrganizationName"></HxInputText>
+                <HxInputText Type="InputType.Password" Label="Heslo" @bind-Value="_model.Password"></HxInputText>
+                <HxInputText Type="InputType.Password" Label="Heslo znovu" @bind-Value="_model.Password2"></HxInputText>
+                
+                <HxSubmit Color="ThemeColor.Primary">Registrovat</HxSubmit>
+            </EditForm>
 
-@if (ExternalAuth.GoogleEnabled)
-{
-    <hr class="my-4" style="max-width: 400px"/>
-    <a class="btn btn-outline-secondary" href="login/google">
-        <HxIcon Icon="BootstrapIcon.Google"/> Registrovat přes Google
-    </a>
-}
+            <p class="mt-4 mb-0 small text-body-secondary">
+                Už máte účet? <a href="Login">Přihlaste se</a>.
+            </p>
+
+            @if (ExternalAuth.GoogleEnabled)
+            {
+                <hr class="my-4" style="max-width: 400px"/>
+                <a class="btn btn-outline-secondary" href="login/google">
+                    <HxIcon Icon="BootstrapIcon.Google"/> Registrovat přes Google
+                </a>
+            }
+        </div>
+    </div>
+</div>

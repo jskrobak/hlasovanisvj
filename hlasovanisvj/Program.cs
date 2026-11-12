@@ -5,7 +5,9 @@ using hlasovanisvj.Components;
 using hlasovanisvj.Data;
 using hlasovanisvj.Hubs;
 using hlasovanisvj.Services;
+using System.Globalization;
 using System.Security.Claims;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -17,6 +19,18 @@ using QuestPDF.Infrastructure;
 QuestPDF.Settings.License = LicenseType.Community;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Aplikace je česká – formát čísel a dat nezávisle na nastavení serveru/kontejneru.
+var czech = new CultureInfo("cs-CZ");
+CultureInfo.DefaultThreadCurrentCulture = czech;
+CultureInfo.DefaultThreadCurrentUICulture = czech;
+
+// Klíče pro přihlašovací cookie musí přežít restart kontejneru.
+var keysPath = builder.Configuration["DataProtection:KeysPath"];
+if (!string.IsNullOrWhiteSpace(keysPath))
+	builder.Services.AddDataProtection()
+		.SetApplicationName("hlasovanisvj")
+		.PersistKeysToFileSystem(new DirectoryInfo(keysPath));
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 if (string.IsNullOrWhiteSpace(connectionString))
@@ -90,6 +104,8 @@ var app = builder.Build();
 app.UseForwardedHeaders();
 
 // Aplikuje čekající EF migrace při startu (nová instance si databázi založí sama).
+// Database:SkipMigrations=true jen pro lokální náhled bez dostupné databáze.
+if (!app.Configuration.GetValue("Database:SkipMigrations", false))
 await using (var scope = app.Services.CreateAsyncScope())
 {
 	var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -127,11 +143,13 @@ app.MapPost("/upload", async ([FromForm] IFormFile file) =>
 {
 	if (file == null || file.Length == 0)
 		return Results.BadRequest("No file uploaded.");
+	if (file.Length > 10 * 1024 * 1024)
+		return Results.BadRequest("Soubor je příliš velký (max. 10 MB).");
 
 	var fileId = await uploadService.SaveFileAsync(file);
 
 	return Results.Ok(fileId);
-}).DisableAntiforgery();
+}).DisableAntiforgery().RequireAuthorization();
 
 app.MapGet("/download", async (HttpContext http, IMemoryCache memoryCache, [FromQuery] Guid guid) =>
 {
@@ -139,7 +157,7 @@ app.MapGet("/download", async (HttpContext http, IMemoryCache memoryCache, [From
 		return Results.NotFound();
 
 	return Results.File(data, "application/octet-stream", $"listky.pdf");
-}).DisableAntiforgery(); 
+}).DisableAntiforgery().RequireAuthorization();
 
 app.MapGet("/downloadXls", async (HttpContext http, IMemoryCache memoryCache, [FromQuery] Guid guid) =>
 {
@@ -148,7 +166,7 @@ app.MapGet("/downloadXls", async (HttpContext http, IMemoryCache memoryCache, [F
 
 	return Results.File(data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "members.xlsx");
 	//return Results.File(data, "application/octet-stream", $"členové.xlsx");
-}).DisableAntiforgery(); 
+}).DisableAntiforgery().RequireAuthorization(); 
 
 // --- PDF report schůze (jen pro organizaci, které schůze patří) ---
 app.MapGet("/sessions/{id:int}/report.pdf", async (int id, HttpContext http,
@@ -191,10 +209,11 @@ app.MapPost("/logout", async (HttpContext http) =>
 	return Results.Redirect("/login?loggedout=1");
 });
 
-app.MapGet("/logout", async (HttpContext http) =>
+app.MapGet("/logout", async (HttpContext http, string? returnUrl) =>
 {
 	await http.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-	return Results.Redirect("/login?loggedout=1");
-}); 
+	var local = !string.IsNullOrEmpty(returnUrl) && returnUrl.StartsWith('/') && !returnUrl.StartsWith("//") && !returnUrl.StartsWith("/\\");
+	return Results.Redirect(local ? $"/login?loggedout=1&returnUrl={Uri.EscapeDataString(returnUrl!)}" : "/login?loggedout=1");
+});
 
 app.Run();

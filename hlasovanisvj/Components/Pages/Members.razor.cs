@@ -57,7 +57,7 @@ public partial class Members(IJSRuntime jsRuntime,
         currentSessionId = currentSession?.Id ?? 0;
         if (currentSessionId == 0)
         {
-            navigationManager.NavigateTo("/");
+            navigationManager.NavigateTo("/Sessions");
             return;
         }
         
@@ -98,7 +98,7 @@ public partial class Members(IJSRuntime jsRuntime,
         var data = pdfService.GeneratePdf(members);
         
         var guid = Guid.NewGuid();
-        memoryCache.Set(guid, data);
+        memoryCache.Set(guid, data, TimeSpan.FromMinutes(10));
         
         var url = $"download?guid={guid}";
         navigationManager.NavigateTo(url, forceLoad: true); 
@@ -215,7 +215,7 @@ public partial class Members(IJSRuntime jsRuntime,
         } ), "Members");
         
         var guid = Guid.NewGuid();
-        memoryCache.Set(guid, memoryStream.ToArray());
+        memoryCache.Set(guid, memoryStream.ToArray(), TimeSpan.FromMinutes(10));
         
         var url = $"downloadXls?guid={guid}";
         navigationManager.NavigateTo(url, forceLoad: true); 

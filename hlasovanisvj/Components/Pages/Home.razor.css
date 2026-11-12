@@ -1,0 +1,44 @@
+.hero {
+    background:
+        radial-gradient(60rem 30rem at 85% -10%, rgba(var(--bs-primary-rgb), .14), transparent 60%),
+        radial-gradient(40rem 25rem at -10% 110%, rgba(var(--bs-success-rgb), .10), transparent 60%);
+}
+
+.step {
+    position: relative;
+    padding: 1.5rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 1rem;
+    background: var(--bs-body-bg);
+}
+
+.step-number {
+    position: absolute;
+    top: 1rem;
+    right: 1.25rem;
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--bs-secondary-color);
+    opacity: .25;
+}
+
+::deep .step-icon {
+    font-size: 1.75rem;
+    color: var(--bs-primary);
+}
+
+::deep .feature-icon {
+    flex: 0 0 auto;
+    font-size: 1.5rem;
+    color: var(--bs-primary);
+    margin-top: .1rem;
+}
+
+.mock-phone {
+    padding: 1.25rem 1rem;
+    border: 6px solid var(--bs-emphasis-color);
+    border-radius: 1.75rem;
+    background: var(--bs-body-bg);
+    box-shadow: 0 1rem 2rem rgba(0, 0, 0, .12);
+}
