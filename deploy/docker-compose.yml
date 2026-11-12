@@ -1,0 +1,61 @@
+# Produkční stack. Spouští se přes deploy/deploy.sh; tajné hodnoty jsou v /opt/hlasovanisvj/.env na serveru.
+name: hlasovanisvj
+
+services:
+  db:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: hlasovanisvj
+      POSTGRES_PASSWORD: ${PG_PASSWORD:?Chybí PG_PASSWORD}
+      POSTGRES_DB: hlasovanisvj
+      TZ: Europe/Prague
+    volumes:
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hlasovanisvj -d hlasovanisvj"]
+      interval: 10s
+      retries: 10
+
+  app:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: hlasovanisvj:latest
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: "Host=db;Database=hlasovanisvj;Username=hlasovanisvj;Password=${PG_PASSWORD}"
+      BaseUrl: ${BASE_URL:?Chybí BASE_URL}
+      Smtp__Host: ${SMTP_HOST:-}
+      Smtp__Port: ${SMTP_PORT:-587}
+      Smtp__UserName: ${SMTP_USERNAME:-}
+      Smtp__Password: ${SMTP_PASSWORD:-}
+      Smtp__From: ${SMTP_FROM:-noreply@schuzesvj.cz}
+      Authentication__Google__ClientId: ${GOOGLE_CLIENT_ID:-}
+      Authentication__Google__ClientSecret: ${GOOGLE_CLIENT_SECRET:-}
+    volumes:
+      - dpkeys:/keys
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  pgdata:
+  dpkeys:
+  caddy_data:
+  caddy_config:

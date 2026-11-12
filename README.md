@@ -38,6 +38,18 @@ Tajné hodnoty patří do user-secrets (lokálně) nebo proměnných prostředí
 Za reverse proxy aplikace čte `X-Forwarded-Proto/Host/For` – proxy je musí posílat a aplikace
 nemá být dostupná přímo, jen přes proxy.
 
+## Nasazení (produkce)
+
+Produkce běží na `skrobak.net` (ARM64) v Docker Compose v `/opt/hlasovanisvj`:
+PostgreSQL, aplikace (image se builduje na serveru) a Caddy s automatickým HTTPS.
+Hlavní doména je `https://schuzesvj.cz`; `schuzesvj.eu` a `www.schuzesvj.eu` na ni přesměrují.
+
+- Jednorázová příprava serveru: `ssh root@skrobak.net 'bash -s' < deploy/server-setup.sh`
+- Nasazení commitu (výchozí `HEAD`): `deploy/deploy.sh [git-ref]`; necommitnutý stav: `deploy/deploy.sh --worktree`
+- Tajné hodnoty (DB heslo, SMTP, Google) jsou jen na serveru v `/opt/hlasovanisvj/.env`; po úpravě znovu spustit `deploy/deploy.sh`.
+- Záloha DB: denně ve 2:30 do `/opt/hlasovanisvj/backups` (14 dní), viz `deploy/backup.sh`.
+- Logy: `ssh root@skrobak.net 'cd /opt/hlasovanisvj && docker compose --env-file .env -f src/deploy/docker-compose.yml logs -f app'`
+
 ## Schůze – detail a report
 
 Na stránce **Schůze → Detail** je souhrn, usnesení s výsledky a prezenční listina.

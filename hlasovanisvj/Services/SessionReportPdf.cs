@@ -26,7 +26,7 @@ public class SessionReportPdf
             {
                 page.Size(PageSizes.A4);
                 page.Margin(15, Unit.Millimetre);
-                page.DefaultTextStyle(x => x.FontSize(9).FontFamily("Arial"));
+                page.DefaultTextStyle(x => x.FontSize(9).FontFamily("Arial", "Liberation Sans", "DejaVu Sans"));
 
                 page.Header().Column(col =>
                 {
