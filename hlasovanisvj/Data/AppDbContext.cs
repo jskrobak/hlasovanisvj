@@ -1,8 +1,5 @@
-using System.Text.RegularExpressions;
-using AngleSharp.Html.Parser;
 using hlasovanisvj.Domain;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Design;
 
 namespace hlasovanisvj.Data;
 
@@ -31,7 +28,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         {
             entity.HasOne<Resolution>(a => a.OpenedResolution)
                 .WithMany()
-                .HasForeignKey(a => a.OpenedResolutionId);
+                .HasForeignKey(a => a.OpenedResolutionId)
+                .OnDelete(DeleteBehavior.SetNull);
             
             entity.HasMany<Member>(o => o.Members)
                 .WithOne(m => m.Session)
@@ -49,7 +47,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
           
             entity.HasOne<Session>(a => a.CurrentSession)
                 .WithMany()
-                .HasForeignKey(a => a.CurrentSessionId);
+                .HasForeignKey(a => a.CurrentSessionId)
+                .OnDelete(DeleteBehavior.SetNull);
             
             entity.HasMany<Session>(o => o.Sessions)
                 .WithOne(s => s.Organization)
@@ -71,7 +70,26 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
             entity.HasMany<Member>(m => m.Principals)
                 .WithOne(c => c.Proxy)
-                .HasForeignKey(m => m.ProxyId);
+                .HasForeignKey(m => m.ProxyId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
+    }
+}
+
+public static class AppDbContextExtensions
+{
+    /// <summary>
+    /// Vyhodí výjimku, pokud schůze neexistuje nebo je uzavřená (jen pro čtení).
+    /// </summary>
+    public static async Task EnsureSessionOpenAsync(this AppDbContext dbContext, int sessionId)
+    {
+        var closedAt = await dbContext.Sessions
+            .Where(s => s.Id == sessionId)
+            .Select(s => new { s.ClosedAt })
+            .FirstOrDefaultAsync()
+            ?? throw new InvalidOperationException("Schůze nenalezena.");
+
+        if (closedAt.ClosedAt != null)
+            throw new InvalidOperationException("Schůze je uzavřená, lze ji pouze prohlížet.");
     }
 }

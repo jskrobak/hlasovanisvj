@@ -5,11 +5,12 @@ using hlasovanisvj.Data;
 using hlasovanisvj.Domain;
 using hlasovanisvj.Services;
 using Microsoft.AspNetCore.Components;
+using Microsoft.EntityFrameworkCore;
 
 namespace hlasovanisvj.Components.Pages;
 
 public partial class Resolutions(UserService userService, 
-    AppDbContext dbContext,
+    IDbContextFactory<AppDbContext> dbFactory,
     IHxMessengerService messengerService,
     NavigationManager navigationManager,
     SessionService sessionService) : ComponentBase
@@ -20,45 +21,53 @@ public partial class Resolutions(UserService userService,
     private int currentSessionId;
     private int? openedResolutionId;
     private ResolutionDetail resolutionDetail;
+    private bool isReadOnly;
 
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
         var user = await userService.GetCurrentUserAsync();
+        if (user == null)
+            return;
         var currentOrganizationId = user.OrganizationId;
         var currentSession = await sessionService.GetCurrentSessionAsync(currentOrganizationId);
 
         currentSessionId = currentSession?.Id ?? 0;
+        if (currentSessionId == 0)
+        {
+            navigationManager.NavigateTo("/");
+            return;
+        }
         openedResolutionId = currentSession?.OpenedResolutionId;
+        isReadOnly = currentSession?.IsClosed == true;
     }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if(currentSessionId == 0)
-            navigationManager.NavigateTo("/");
-    }
 
     async Task<GridDataProviderResult<Resolution>> GetGridData(GridDataProviderRequest<Resolution> req)
     {
+        await using var dbContext = await dbFactory.CreateDbContextAsync();
         var data = dbContext.Resolutions
+            .AsNoTracking()
             .Where(r => r.SessionId == currentSessionId);
         
         if(!string.IsNullOrWhiteSpace(filterModel.Name))
-            data = data.Where(p => p.Title.Contains(filterModel.Name));
+            data = data.Where(p => EF.Functions.ILike(p.Title, $"%{filterModel.Name}%"));
 
-        var count = data.Count();
+        var count = await data.CountAsync();
         data = data.ApplyGridDataProviderRequest(req);
 		
         return new GridDataProviderResult<Resolution>
         {
-            Data = data,
+            Data = await data.ToListAsync(),
             TotalCount = count
         };
     }
 
     private async Task HandleSelectedDataItemChanged()
     {
-        resolutionDetail.Model = currentResolution!;
+        if (currentResolution == null)
+            return;
+        resolutionDetail.Model = currentResolution;
         await resolutionDetail.ShowAsync();
     }
 
@@ -77,7 +86,7 @@ public partial class Resolutions(UserService userService,
     {
         try
         {
-            await sessionService.SetOpenedResolutionAsync(currentSessionId, resolutionId);
+            await sessionService.OpenResolutionAsync(currentSessionId, resolutionId);
             openedResolutionId = resolutionId;
         }
         catch (InvalidOperationException ex)
@@ -91,7 +100,8 @@ public partial class Resolutions(UserService userService,
 
     private async Task HandleCloseResolutionButtonClick()
     {
-        await NullCurrentResolutionAsync();
+        await sessionService.CloseResolutionAsync(currentSessionId);
+        openedResolutionId = null;
         
         messengerService.AddInformation("Hlasování uzavřeno");
         
@@ -101,11 +111,5 @@ public partial class Resolutions(UserService userService,
     private async Task HandleDetailClosed()
     {
         await gridComponent.RefreshDataAsync();
-    }
-    
-    private async Task NullCurrentResolutionAsync()
-    {
-        await sessionService.SetOpenedResolutionAsync(currentSessionId, null);
-        openedResolutionId = null;
     }
 }

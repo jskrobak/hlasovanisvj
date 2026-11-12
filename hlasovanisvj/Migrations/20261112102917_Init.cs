@@ -1,12 +1,14 @@
 ﻿using System;
+using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
 namespace hlasovanisvj.Migrations
 {
     /// <inheritdoc />
-    public partial class init : Migration
+    public partial class Init : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -15,12 +17,12 @@ namespace hlasovanisvj.Migrations
                 name: "Users",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    Email = table.Column<string>(type: "TEXT", nullable: false),
-                    PasswordHash = table.Column<string>(type: "TEXT", nullable: true),
-                    Roles = table.Column<string>(type: "TEXT", nullable: false),
-                    OrganizationId = table.Column<int>(type: "INTEGER", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Email = table.Column<string>(type: "text", nullable: false),
+                    PasswordHash = table.Column<string>(type: "text", nullable: true),
+                    Roles = table.Column<string[]>(type: "text[]", nullable: false),
+                    OrganizationId = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -31,17 +33,18 @@ namespace hlasovanisvj.Migrations
                 name: "Members",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    GlobalId = table.Column<Guid>(type: "TEXT", nullable: false),
-                    Name = table.Column<string>(type: "TEXT", nullable: false),
-                    Units = table.Column<string>(type: "TEXT", nullable: false),
-                    Addresses = table.Column<string>(type: "TEXT", nullable: false),
-                    IsPresent = table.Column<bool>(type: "INTEGER", nullable: false),
-                    ShareValue = table.Column<double>(type: "REAL", nullable: false),
-                    ShareFraction = table.Column<string>(type: "TEXT", nullable: false),
-                    ProxyId = table.Column<int>(type: "INTEGER", nullable: true),
-                    SessionId = table.Column<int>(type: "INTEGER", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    GlobalId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    Units = table.Column<List<string>>(type: "text[]", nullable: false),
+                    Addresses = table.Column<List<string>>(type: "text[]", nullable: false),
+                    IsPresent = table.Column<bool>(type: "boolean", nullable: false),
+                    ShareValue = table.Column<double>(type: "double precision", nullable: false),
+                    ShareFraction = table.Column<string>(type: "text", nullable: false),
+                    IsGuest = table.Column<bool>(type: "boolean", nullable: false),
+                    ProxyId = table.Column<int>(type: "integer", nullable: true),
+                    SessionId = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -50,18 +53,19 @@ namespace hlasovanisvj.Migrations
                         name: "FK_Members_Members_ProxyId",
                         column: x => x.ProxyId,
                         principalTable: "Members",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.SetNull);
                 });
 
             migrationBuilder.CreateTable(
                 name: "Organizations",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    Name = table.Column<string>(type: "TEXT", nullable: false),
-                    UserId = table.Column<int>(type: "INTEGER", nullable: false),
-                    CurrentSessionId = table.Column<int>(type: "INTEGER", nullable: true)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    UserId = table.Column<int>(type: "integer", nullable: false),
+                    CurrentSessionId = table.Column<int>(type: "integer", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -78,12 +82,17 @@ namespace hlasovanisvj.Migrations
                 name: "Resolutions",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    Title = table.Column<string>(type: "TEXT", nullable: false),
-                    Question = table.Column<string>(type: "TEXT", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    SessionId = table.Column<int>(type: "INTEGER", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Title = table.Column<string>(type: "text", nullable: false),
+                    Question = table.Column<string>(type: "text", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    SessionId = table.Column<int>(type: "integer", nullable: false),
+                    ClosedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    PresentShare = table.Column<double>(type: "double precision", nullable: true),
+                    InFavorShare = table.Column<double>(type: "double precision", nullable: true),
+                    AgainstShare = table.Column<double>(type: "double precision", nullable: true),
+                    AbstainedShare = table.Column<double>(type: "double precision", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -94,12 +103,13 @@ namespace hlasovanisvj.Migrations
                 name: "Sessions",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    Date = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    Name = table.Column<string>(type: "TEXT", nullable: false),
-                    OrganizationId = table.Column<int>(type: "INTEGER", nullable: false),
-                    OpenedResolutionId = table.Column<int>(type: "INTEGER", nullable: true)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Date = table.Column<DateOnly>(type: "date", nullable: false),
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    ClosedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    OrganizationId = table.Column<int>(type: "integer", nullable: false),
+                    OpenedResolutionId = table.Column<int>(type: "integer", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -114,19 +124,20 @@ namespace hlasovanisvj.Migrations
                         name: "FK_Sessions_Resolutions_OpenedResolutionId",
                         column: x => x.OpenedResolutionId,
                         principalTable: "Resolutions",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.SetNull);
                 });
 
             migrationBuilder.CreateTable(
                 name: "Votes",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    Date = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    MemberId = table.Column<int>(type: "INTEGER", nullable: false),
-                    ResolutionId = table.Column<int>(type: "INTEGER", nullable: false),
-                    Choice = table.Column<int>(type: "INTEGER", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Date = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    MemberId = table.Column<int>(type: "integer", nullable: false),
+                    ResolutionId = table.Column<int>(type: "integer", nullable: false),
+                    Choice = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -216,7 +227,8 @@ namespace hlasovanisvj.Migrations
                 table: "Organizations",
                 column: "CurrentSessionId",
                 principalTable: "Sessions",
-                principalColumn: "Id");
+                principalColumn: "Id",
+                onDelete: ReferentialAction.SetNull);
 
             migrationBuilder.AddForeignKey(
                 name: "FK_Resolutions_Sessions_SessionId",

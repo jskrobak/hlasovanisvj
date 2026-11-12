@@ -1,3 +1,4 @@
+using Havit.Blazor.Components.Web;
 using Havit.Blazor.Components.Web.Bootstrap;
 using hlasovanisvj.Data;
 using hlasovanisvj.Domain;
@@ -15,7 +16,8 @@ public partial class VoteLive(UserService userService,
     NavigationManager navigationManager,
     MemberService memberService,
     AttendanceService attendanceService,
-    SessionService sessionService) : ComponentBase, IAsyncDisposable
+    SessionService sessionService,
+    IHxMessengerService messengerService) : ComponentBase, IAsyncDisposable
 {
     private int resolutionId;
     private Resolution? _resolution;
@@ -88,26 +90,23 @@ public partial class VoteLive(UserService userService,
 
     private async Task HandleCloseResolution()
     {
-        await sessionService.SetOpenedResolutionAsync(currentSessionId, null);
+        await sessionService.CloseResolutionAsync(currentSessionId);
         navigationManager.NavigateTo("/Resolutions");
     }
 
-    private async Task HandleVoteInFavor(Member member)
-    {
-        await voteService.MakeVoteAsync(member.Id, resolutionId, VoteChoice.InFavor);
-        //await gridComponent.RefreshDataAsync();
-    }
+    private Task HandleVoteInFavor(Member member) => VoteAsync(member, VoteChoice.InFavor);
+    private Task HandleVoteAgainst(Member member) => VoteAsync(member, VoteChoice.Against);
+    private Task HandleVoteAbstained(Member member) => VoteAsync(member, VoteChoice.Abstained);
 
-    private async Task HandleVoteAgainst(Member member)
+    private async Task VoteAsync(Member member, VoteChoice choice)
     {
-        await voteService.MakeVoteAsync(member.Id, resolutionId, VoteChoice.Against);
-        //UpdateMemberVote(member, VoteChoice.Against);
+        try
+        {
+            await voteService.MakeVoteAsync(member.Id, resolutionId, choice);
+        }
+        catch (InvalidOperationException ex)
+        {
+            messengerService.AddError(ex.Message);
+        }
     }
-
-    private async Task HandleVoteAbstained(Member member)
-    {
-        await voteService.MakeVoteAsync(member.Id, resolutionId, VoteChoice.Abstained);
-        //UpdateMemberVote(member, VoteChoice.Abstained);
-    }
-
 }

@@ -6,7 +6,7 @@ public class Vote
 {
     [Key]
     public int Id { get; set; }
-    public DateTime Date { get; set; } = DateTime.Now;
+    public DateTime Date { get; set; } = DateTime.UtcNow;
     
     public int MemberId { get; set; }
     public Member Member { get; set; }

@@ -24,7 +24,7 @@ public partial class SessionDetail(SessionService sessionService, IHxMessengerSe
         
         await sessionDetailOffCanvasComponent.HideAsync();
         StateHasChanged();
-        messengerService.AddInformation("Hlasování uloženo");
+        messengerService.AddInformation("Schůze uložena");
     }
 
     private async Task HandleClosed()

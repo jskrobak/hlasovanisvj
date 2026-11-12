@@ -26,6 +26,8 @@ public partial class Sessions(UserService userService,
     {
         await base.OnInitializedAsync();
         var user = await userService.GetCurrentUserAsync();
+        if (user == null)
+            return;
         organizationId = user.OrganizationId;
         currentSession = await sessionService.GetCurrentSessionAsync(organizationId);
         currentSessionId = currentSession?.Id;
@@ -41,7 +43,9 @@ public partial class Sessions(UserService userService,
 
     private async Task HandleSelectedDataItemChanged()
     {
-        sessionDetail.Model = currentSession!;
+        if (currentSession == null)
+            return;
+        sessionDetail.Model = currentSession;
         await sessionDetail.ShowAsync();
     }
 
@@ -49,7 +53,7 @@ public partial class Sessions(UserService userService,
     {
         sessionDetail.Model = new Session
         {
-            Date = DateTime.Today,
+            Date = DateOnly.FromDateTime(DateTime.Today),
             Name = "Nová schůze",
             OrganizationId =  organizationId
         };
@@ -63,7 +67,18 @@ public partial class Sessions(UserService userService,
         currentSessionId = sessionId;
         
         messengerService.AddInformation("Schůze otevřena");
-        //navigationManager.NavigateTo("/VoteLive");
+        await gridComponent.RefreshDataAsync();
+    }
+
+    private async Task HandleCloseSessionButtonClick(int sessionId)
+    {
+        if (!await messageBoxService.ConfirmAsync(
+                "Uzavřít schůzi? Případné probíhající hlasování se ukončí a schůzi už půjde jen prohlížet (nelze měnit účast, účastníky ani hlasovat)."))
+            return;
+
+        await sessionService.CloseSessionAsync(sessionId);
+        messengerService.AddInformation("Schůze uzavřena");
+        await gridComponent.RefreshDataAsync();
     }
 
     private async Task HandleDetailClosed()

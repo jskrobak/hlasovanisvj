@@ -1,33 +1,56 @@
 @using hlasovanisvj.Domain
-<HxOffcanvas @ref="memberDetailOffCanvasComponent" Title="Edit" Backdrop="OffcanvasBackdrop.Static">
+<HxOffcanvas @ref="memberDetailOffCanvasComponent" Title="@Title" Backdrop="OffcanvasBackdrop.Static" OnClosed="HandleClosed">
 	<BodyTemplate>
-		<h5>@Model.Name</h5>
-		
-		<p>
-			Podíl: @((Model.ShareValue * 100).ToString("0.000")) % (@Model.ShareFraction)
-		</p>
-		
-		<HxMultiSelect Label="Plné moci od:"
-		               TItem="Member"
-		               TValue="int"
-		               Data="@allMembers"
-		               @bind-Value="selectedPrincipalIds"
-		               TextSelector="@(p => p.Name)"
-		               ValueSelector="@(p => p.Id)"
-		               NullDataText="Loading members..."
-		               EmptyText="-vyber člena-" />
+		@if (Model != null)
+		{
+			<EditForm Id="@FormId" Model="@Model" OnValidSubmit="SaveMember">
+				@if (Model.IsGuest)
+				{
+					<p class="text-muted">
+						Host není členem SVJ, má nulový podíl a hlasuje jen za členy, kteří mu udělili plnou moc.
+					</p>
+					<HxInputText Label="Jméno" @bind-Value="Model.Name" Enabled="@(!ReadOnly)"/>
+				}
+				else
+				{
+					<h5>@Model.Name</h5>
+					<p>
+						Jednotky: @string.Join(", ", Model.Units)<br/>
+						Podíl: @Model.ShareValue.ToString("0.000") % (@Model.ShareFraction)
+					</p>
+				}
 
-		<p class="mt-3">Plné moci od: @string.Join(", ", selectedPrincipalIds.Select(e => e.ToString()))</p>
+				<HxSwitch Text="Přítomen" @bind-Value="Model.IsPresent"
+				          Enabled="@(!ReadOnly && Model.ProxyId == null)" CssClass="mt-3"/>
+			</EditForm>
 
-		
-		
-		<EditForm Id="@FormId" Model="@Model" OnValidSubmit="@(async () => { await SaveMember(); })">
-			<DataAnnotationsValidator/>
+			<HxMultiSelect Label="Plné moci od:"
+			               TItem="Member"
+			               TValue="int"
+			               Data="@allMembers"
+			               @bind-Value="selectedPrincipalIds"
+			               TextSelector="@(p => $"{p.Id} – {p.Name}")"
+			               ValueSelector="@(p => p.Id)"
+			               Enabled="@(!ReadOnly)"
+			               NullDataText="Načítám členy..."
+			               EmptyText="-vyber člena-"
+			               CssClass="mt-3"/>
 
-
-		</EditForm>
+			<p class="mt-3">Plné moci od: @string.Join(", ", selectedPrincipalIds)</p>
+		}
 	</BodyTemplate>
 	<FooterTemplate>
-		<HxSubmit Color="ThemeColor.Primary" FormId="editForm"Icon="BootstrapIcon.Save">Uložit</HxSubmit>
+		@if (!ReadOnly)
+		{
+			<HxSubmit Color="ThemeColor.Primary" FormId="@FormId" Icon="BootstrapIcon.Save">Uložit</HxSubmit>
+		}
+		@if (Model?.Id > 0)
+		{
+			<HxButton Color="ThemeColor.Secondary" Icon="BootstrapIcon.FiletypePdf" Text="Lístek" OnClick="PrintTicket"/>
+		}
+		@if (!ReadOnly && Model?.IsGuest == true && Model.Id > 0)
+		{
+			<HxButton Color="ThemeColor.Danger" Icon="BootstrapIcon.Trash" Text="Odebrat hosta" OnClick="DeleteGuest"/>
+		}
 	</FooterTemplate>
 </HxOffcanvas>

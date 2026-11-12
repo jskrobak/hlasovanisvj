@@ -1,6 +1,5 @@
 using System.Text.RegularExpressions;
 using AngleSharp.Html.Parser;
-using hlasovanisvj.Data;
 using hlasovanisvj.Domain;
 
 namespace hlasovanisvj.Services;
@@ -9,8 +8,6 @@ public class DataImportService(MemberService memberService)
 {
     public async Task ImportHtmlAsync(int sessionId, Stream stream)
     {
-        await memberService.ClearMembersAsync(sessionId);
-        
         var parser = new HtmlParser();
         var document = parser.ParseDocument(stream);
 
@@ -66,6 +63,12 @@ public class DataImportService(MemberService memberService)
             }
         }
 
+        if (members.Count == 0)
+            throw new InvalidOperationException("V souboru nebyli nalezeni žádní vlastníci.");
+
+        // Mazat až po úspěšném parsování, ať chybný soubor nesmaže stávající účastníky.
+        // Smaže i hosty – import je určený pro přípravu schůze, ne pro její průběh.
+        await memberService.ClearMembersAsync(sessionId);
         await memberService.InsertMembers(members);
     }
 }

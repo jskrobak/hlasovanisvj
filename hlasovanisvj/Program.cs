@@ -16,16 +16,15 @@ QuestPDF.Settings.License = LicenseType.Community;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ??
-                       throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrWhiteSpace(connectionString))
+	throw new InvalidOperationException(
+		"Chybí connection string 'DefaultConnection' (user-secrets nebo proměnná ConnectionStrings__DefaultConnection).");
 
 builder.Services.AddDbContextFactory<AppDbContext>(options =>
 {
-	options.UseSqlite(connectionString);
+	options.UseNpgsql(connectionString);
 });
-
-//builder.Services.AddDbContext<AppDbContext>(options =>
-//	options.UseSqlite(connectionString));
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
@@ -64,6 +63,13 @@ builder.Services.AddTransient<IUploadService, UploadToMemoryCacheService>();
 builder.Services.AddMemoryCache();
 
 var app = builder.Build();
+
+// Aplikuje čekající EF migrace při startu (nová instance si databázi založí sama).
+await using (var scope = app.Services.CreateAsyncScope())
+{
+	var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+	await db.Database.MigrateAsync();
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

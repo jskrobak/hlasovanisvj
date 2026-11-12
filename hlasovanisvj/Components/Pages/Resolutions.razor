@@ -2,20 +2,33 @@
 @using hlasovanisvj.Domain
 @attribute [Authorize]
 
+@if (currentSessionId != 0)
+{
 <HxListLayout Title="Hlasování" TFilterModel="ResolutionFilter"
               @bind-FilterModel="filterModel"
               @bind-FilterModel:after="gridComponent.RefreshDataAsync">
+	<TitleTemplate>
+		Hlasování
+		@if (isReadOnly)
+		{
+			<HxBadge Color="ThemeColor.Secondary" CssClass="ms-2">Uzavřená schůze – jen pro čtení</HxBadge>
+		}
+	</TitleTemplate>
 	<CommandsTemplate>
-		<HxButton Text="Nové hlasování"
-		          Color="ThemeColor.Primary"
-		          Icon="BootstrapIcon.Plus" OnClick="HandleNewResolutionClick"/>
+		@if (!isReadOnly)
+		{
+			<HxButton Text="Nové hlasování"
+			          Color="ThemeColor.Primary"
+			          Icon="BootstrapIcon.Plus" OnClick="HandleNewResolutionClick"/>
+		}
 	</CommandsTemplate>
 	<FilterTemplate Context="filterContext">
 		<HxInputText Label="Member" @bind-Value="filterContext.Name"/>
 	</FilterTemplate>
 	<DataTemplate>
 		<HxGrid @ref="gridComponent"
-		        ContentNavigationMode="GridContentNavigationMode.InfiniteScroll"
+		        ContentNavigationMode="GridContentNavigationMode.Pagination"
+		        PageSize="50"
 		        TableContainerCssClass="scrollable-table-container"
 		        HeaderRowCssClass="sticky-top"
 		        FooterRowCssClass="sticky-bottom"
@@ -31,12 +44,29 @@
 				              IsDefaultSortColumn="true"/>
 				<HxGridColumn HeaderText="Otázka"
 				              ItemTextSelector="@(p => p.Question)"
-				              SortKeySelector="p => p.Question"
-				              IsDefaultSortColumn="true"/>
+				              SortKeySelector="p => p.Question"/>
+				<HxGridColumn HeaderText="Výsledek (% přítomných)">
+					<ItemTemplate Context="item">
+						@if (item.HasResult)
+						{
+							<HxBadge Color="ThemeColor.Success">Pro @item.PercentOfPresent(item.InFavorShare).ToString("0.00") %</HxBadge>
+							<HxBadge Color="ThemeColor.Danger" CssClass="ms-1">Proti @item.PercentOfPresent(item.AgainstShare).ToString("0.00") %</HxBadge>
+							<HxBadge Color="ThemeColor.Secondary" CssClass="ms-1">Zdržel se @item.PercentOfPresent(item.AbstainedShare).ToString("0.00") %</HxBadge>
+							<div class="small text-muted">Přítomno @item.PresentShare?.ToString("0.000") % podílů</div>
+						}
+						else if (openedResolutionId == item.Id)
+						{
+							<HxBadge Color="ThemeColor.Warning">Probíhá</HxBadge>
+						}
+					</ItemTemplate>
+				</HxGridColumn>
 				<HxGridColumn HeaderText="Akce">
 					
 					<ItemTemplate Context="item">
-						@if(openedResolutionId == item.Id)
+						@if (isReadOnly)
+						{
+						}
+						else if(openedResolutionId == item.Id)
 						{
 							<HxButton Color="ThemeColor.Danger"
 							          Text="Uzavřít hlasování"
@@ -45,7 +75,7 @@
 						else
 						{
 							<HxButton Color="ThemeColor.Primary"
-							          Text="Otevřít hlasování"
+							          Text="@(item.ClosedAt == null ? "Otevřít hlasování" : "Hlasovat znovu")"
 							          OnClick="@(() => HandleOpenResolutionButtonClick(item.Id))"></HxButton>
 						}
 					</ItemTemplate>
@@ -57,5 +87,6 @@
 		
 	</DetailTemplate>
 </HxListLayout>
+}
 
-<ResolutionDetail @ref="resolutionDetail" OnClosed="HandleDetailClosed"></ResolutionDetail>
+<ResolutionDetail @ref="resolutionDetail" OnClosed="HandleDetailClosed" ReadOnly="@isReadOnly"></ResolutionDetail>

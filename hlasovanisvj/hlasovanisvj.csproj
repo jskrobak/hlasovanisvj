@@ -4,6 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>89fa5ad8-92fc-422c-bd01-65bd10d828e4</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
@@ -12,12 +13,12 @@
     <PackageReference Include="ExcelMapper" Version="6.0.615" />
     <PackageReference Include="Havit.Blazor.Components.Web.Bootstrap" Version="4.21.0" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.2" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.1" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.1" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.1">
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.12" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.12">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
     <PackageReference Include="QRCoder" Version="1.7.0" />
     <PackageReference Include="QuestPDF" Version="2025.12.2" />
     <PackageReference Include="SkiaSharp" Version="3.119.1" />

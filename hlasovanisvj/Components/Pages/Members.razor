@@ -13,6 +13,8 @@
 
 <div id="qr-reader" style="width:300px"></div>
 
+@if (currentSession != null)
+{
 <HxListLayout Title="Účastníci" TFilterModel="MemberFilter"
               @bind-FilterModel="filterModel"
               @bind-FilterModel:after="gridComponent.RefreshDataAsync">
@@ -21,11 +23,23 @@
 		<HxBadge Color="@(totalPresentShare > 50 ? ThemeColor.Success: ThemeColor.Danger)">
 			@totalPresentShare.ToString("0.000")
 		</HxBadge>&nbsp;%
+		@if (IsReadOnly)
+		{
+			<HxBadge Color="ThemeColor.Secondary" CssClass="ms-2">Uzavřená schůze – jen pro čtení</HxBadge>
+		}
 	</TitleTemplate>
 	<CommandsTemplate>
-		<HxButton Text="Import"
-		          Color="ThemeColor.Primary"
-		          Icon="BootstrapIcon.FiletypeHtml" OnClick="HandleImportHtmlClick"/>
+		@if (!IsReadOnly)
+		{
+			<HxButton Text="Import"
+			          Color="ThemeColor.Primary"
+			          Icon="BootstrapIcon.FiletypeHtml" OnClick="HandleImportHtmlClick"/>
+
+			<HxButton Text="Host"
+			          Tooltip="Přidat nečlena SVJ, který zastupuje členy na základě plné moci"
+			          Color="ThemeColor.Primary"
+			          Icon="BootstrapIcon.PersonPlus" OnClick="HandleAddGuestClick"/>
+		}
 		
 		<HxButton Text="Lístky"
 		          Color="ThemeColor.Primary"
@@ -35,9 +49,12 @@
 		          Color="ThemeColor.Primary"
 		          Icon="BootstrapIcon.FiletypeXlsx" OnClick="HandleExportExcel"/>
 		
-		<HxButton Text="QrScan"
-		          Color="ThemeColor.Primary"
-		          Icon="BootstrapIcon.QrCodeScan" OnClick="HandleScanQrClick"/>
+		@if (!IsReadOnly)
+		{
+			<HxButton Text="QrScan"
+			          Color="ThemeColor.Primary"
+			          Icon="BootstrapIcon.QrCodeScan" OnClick="HandleScanQrClick"/>
+		}
 	</CommandsTemplate>
 	<FilterTemplate Context="filterContext">
 		<HxInputText Label="Member" @bind-Value="filterContext.Name"/>
@@ -59,8 +76,15 @@
 				              SortKeySelector="p => p.Id"
 				              IsDefaultSortColumn="true"/>
 				<HxGridColumn HeaderText="Jméno"
-				              ItemTextSelector="@(p => p.Name)"
-				              SortKeySelector="p => p.Name"/>
+				              SortKeySelector="p => p.Name">
+					<ItemTemplate Context="item">
+						@item.Name
+						@if (item.IsGuest)
+						{
+							<HxBadge Color="ThemeColor.Info" CssClass="ms-1">host</HxBadge>
+						}
+					</ItemTemplate>
+				</HxGridColumn>
 				<HxGridColumn HeaderText="Podíl"
 				              ItemTextSelector="@(p => p.ShareValue.ToString("0.000"))"
 				              SortKeySelector="p => p.ShareValue"/>
@@ -71,7 +95,7 @@
 				              SortKeySelector="p => p.IsPresent">
 					
 					<ItemTemplate Context="item">
-						<HxSwitch @bind-Value="@item.IsPresent" Enabled="@(item.Proxy==null)"  
+						<HxSwitch @bind-Value="@item.IsPresent" Enabled="@(item.Proxy == null && !IsReadOnly)"  
 						          @bind-Value:after="@(async () => await SavePresenceAsync(item))" />
 					</ItemTemplate>
 				</HxGridColumn>
@@ -116,5 +140,7 @@
 		</BodyTemplate>
 </HxOffcanvas>
 
-<MemberDetail @ref="memberDetail" OnClosed="HandleDetailClosed" Model="@currentMember"></MemberDetail>
+}
+
+<MemberDetail @ref="memberDetail" OnClosed="HandleDetailClosed" ReadOnly="@IsReadOnly"></MemberDetail>
 
